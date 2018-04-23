@@ -12,9 +12,15 @@ pub struct Slug<'a> {
     pub to: PathBuf,
 }
 
-// pub fn slug1(path: AsRef<Path>) -> io::Result<PathBuf> {
-//
-// }
+pub fn slug1(path: &Path) -> io::Result<PathBuf> {
+    let to = slugify!(path.file_name().unwrap().to_str().unwrap());
+    Ok(PathBuf::from(to))
+}
+
+#[test]
+fn slug1_base_case() {
+    assert_eq!(slug1(&PathBuf::from("a b")).unwrap(), PathBuf::from("a-b"));
+}
 
 /// Scans depth first then by path name within
 pub fn scan(path: &Path) -> io::Result<Vec<walkdir::DirEntry>> {
