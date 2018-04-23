@@ -1,17 +1,15 @@
+extern crate slugger;
 #[macro_use(slugify)]
 extern crate slugify;
-extern crate slugger;
+extern crate walkdir;
 
-use std::path::PathBuf;
-use slugger::slug;
 use slugify::slugify;
-
+use std::env;
+use walkdir::WalkDir;
+use slugger::Slug;
+use std::path::PathBuf;
 fn main() {
-    let hey = "/foo/bar baz/bux .txt ";
-    println!("{}", slugify!("Hello, world!"));
-    println!("{}", slugify!(hey));
-    println!(
-        "slug: {}",
-        slug(&PathBuf::from("/hey/foo bar")).to_string_lossy()
-    );
+    for path in env::args().skip(1) {
+        slugger::slug(&PathBuf::from(path));
+    }
 }
