@@ -1,10 +1,12 @@
 extern crate walkdir;
 use std::path::{Path, PathBuf};
-use std::io;
-use walkdir::WalkDir;
+use std::{cmp, io};
+use std::cmp::Ordering;
+use walkdir::{DirEntry, WalkDir};
 #[macro_use(slugify)]
 extern crate slugify;
 use slugify::slugify;
+use std::fs::FileType;
 
 #[derive(Debug)]
 pub struct Slug<'a> {
@@ -12,14 +14,57 @@ pub struct Slug<'a> {
     pub to: PathBuf,
 }
 
-pub fn slug1(path: &Path) -> io::Result<PathBuf> {
-    let to = slugify!(path.file_name().unwrap().to_str().unwrap());
-    Ok(PathBuf::from(to))
+// pub fn slug1(path: &Path) -> io::Result<PathBuf> {
+//     let to = slugify!(path.file_name().unwrap().to_str().unwrap());
+//     Ok(PathBuf::from(to))
+// }
+
+// #[test]
+// fn slug1_base_case() {
+//     assert_eq!(slug1(&PathBuf::from("a b")).unwrap(), PathBuf::from("a-b"));
+// }
+
+fn sort_depth_then_directories(path_a: &Path, path_b: &Path) -> Ordering {
+    // deepest first
+    path_a
+        .components()
+        .count()
+        .cmp(&path_b.components().count())
+        .reverse()
+    // directories first (rust considers true>false)
+        .then(path_a.is_dir().cmp(&path_b.is_dir()).reverse())
+    // then files sorted by name
+       .then(path_a.cmp(&path_b))
 }
 
 #[test]
-fn slug1_base_case() {
-    assert_eq!(slug1(&PathBuf::from("a b")).unwrap(), PathBuf::from("a-b"));
+fn sort_by_name() {
+    let p1 = PathBuf::from("a");
+    let p2 = PathBuf::from("b");
+    assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
+}
+
+#[test]
+fn sort_by_depth() {
+    let p1 = PathBuf::from("b/b");
+    let p2 = PathBuf::from("a");
+    assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
+}
+
+#[test]
+fn sort_directories_first() {
+    let src_dir = PathBuf::from(file!());
+    let src_dir = src_dir.parent().unwrap();
+    let src_path = PathBuf::from("s"); // earlier same name but file not dir
+    println!("true.cmp(false) {:?}", true.cmp(&false));
+    println!("src_dir components {:?}", src_dir.components().count());
+    println!("src_dir is_dir {:?}", src_dir.is_dir());
+    println!("src_path components {:?}", src_path.components().count());
+    println!("src_path is_dir {:?}", src_path.is_dir());
+    assert_eq!(
+        sort_depth_then_directories(&src_dir, &src_path),
+        Ordering::Less
+    );
 }
 
 /// Scans depth first then by path name within
