@@ -7,3 +7,4 @@ authors = ["Peter Lyons <pete@peterlyons.com>"]
 slugify = "0.1.0"
 walkdir = "2.1.4"
 # rsfs = "0.4.1"    # A generic filesystem with disk and in-memory implementations.
+unidecode = "0.3.0"

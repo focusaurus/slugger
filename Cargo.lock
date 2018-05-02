@@ -11,6 +11,7 @@ name = "slugger"
 version = "0.1.0"
 dependencies = [
  "slugify 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "unidecode 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "walkdir 2.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

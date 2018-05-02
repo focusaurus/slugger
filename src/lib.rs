@@ -7,11 +7,49 @@ use walkdir::{DirEntry, WalkDir};
 extern crate slugify;
 use slugify::slugify;
 use std::fs::FileType;
+extern crate unidecode;
+use unidecode::unidecode;
 
 #[derive(Debug)]
 pub struct Slug<'a> {
     pub from: &'a Path,
     pub to: PathBuf,
+}
+
+// Based on https://docs.rs/slugify/0.1.0/src/slugify/lib.rs.html#1-355
+pub fn slug2(input: &str) -> String {
+    let separator = '-';
+    let mut input: String = unidecode(input.into())
+        .to_lowercase()
+        .trim()
+        .trim_matches(separator)
+        .replace(' ', &separator.to_string());
+
+    let mut slug = Vec::with_capacity(input.len());
+
+    let mut is_sep = true;
+
+    for x in input.chars() {
+        match x {
+            'a'...'z' | '0'...'9' | '.' => {
+                is_sep = false;
+                slug.push(x as u8);
+            }
+            _ => {
+                if !is_sep {
+                    is_sep = true;
+                    slug.push(separator as u8);
+                } else {
+                }
+            }
+        }
+    }
+
+    if slug.last() == Some(&(separator as u8)) {
+        slug.pop();
+    }
+
+    String::from_utf8(slug).unwrap()
 }
 
 pub fn get_slug(from: &Path) -> Result<Slug, String> {
@@ -20,19 +58,23 @@ pub fn get_slug(from: &Path) -> Result<Slug, String> {
     let last = last.unwrap();
     let last = last.as_os_str();
     let last = last.to_string_lossy(); // FIXME error handling
-    let mut to = PathBuf::from(slugify!(&last));
+    let mut to = PathBuf::from(slug2(&last));
     let parent = from.parent();
     match parent {
         Some(dir) => {
             let mut dir = dir.to_path_buf();
-            dir.push(PathBuf::from(last.to_string()));
+            dir.push(to);
             to = dir;
         }
-        None => ()
+        None => (),
     }
 
     let slug = Slug { from, to };
     Ok(slug)
+}
+
+pub fn compile() {
+    println!("{:?}", get_slug(&PathBuf::from("/foo/a b c.txt")));
 }
 
 // #[test]
@@ -92,7 +134,15 @@ pub fn scan(path: &Path) -> io::Result<Vec<PathBuf>> {
         .collect();
     // let mut entries = entries.clone();
     paths.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
-    // paths = paths.iter().map(get_slug).collect();
+    // let slugs: Vec<Result<Slug, String>> = paths
+    //     .clone()
+    //     .into_iter()
+    //     .map(|path_buf| get_slug(path_buf))
+    //     .collect();
+    // for slug in slugs {
+    //     println!("{:?}", slug);
+    // }
+    compile();
     Ok(paths)
 }
 //
