@@ -16,6 +16,23 @@ pub struct Slug<'a> {
     pub to: PathBuf,
 }
 
+pub fn slug3(input: &str) -> String {
+    let separator = '-';
+    let input = input.trim().to_lowercase();
+    let mut slug = String::with_capacity(input.len());
+    for ccc in input.chars() {
+        println!("{:?}", ccc);
+        if ccc.is_whitespace() {
+            slug.push(separator);
+            continue;
+        }
+        match ccc {
+            'a'...'z' | '0'...'9' | '.' => slug.push(ccc),
+            _ => (), // delete anything else
+        }
+    }
+    slug
+}
 // Based on https://docs.rs/slugify/0.1.0/src/slugify/lib.rs.html#1-355
 pub fn slug2(input: &str) -> String {
     let separator = '-';
@@ -58,7 +75,7 @@ pub fn get_slug(from: &Path) -> Result<Slug, String> {
     let last = last.unwrap();
     let last = last.as_os_str();
     let last = last.to_string_lossy(); // FIXME error handling
-    let mut to = PathBuf::from(slug2(&last));
+    let mut to = PathBuf::from(slug3(&last));
     let parent = from.parent();
     match parent {
         Some(dir) => {
