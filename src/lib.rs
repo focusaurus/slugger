@@ -14,10 +14,26 @@ pub struct Slug<'a> {
     pub to: PathBuf,
 }
 
-// pub fn slug1(path: &Path) -> io::Result<PathBuf> {
-//     let to = slugify!(path.file_name().unwrap().to_str().unwrap());
-//     Ok(PathBuf::from(to))
-// }
+pub fn get_slug(from: &Path) -> Result<Slug, String> {
+    // get the last component
+    let last = from.components().last();
+    let last = last.unwrap();
+    let last = last.as_os_str();
+    let last = last.to_string_lossy(); // FIXME error handling
+    let mut to = PathBuf::from(slugify!(&last));
+    let parent = from.parent();
+    match parent {
+        Some(dir) => {
+            let mut dir = dir.to_path_buf();
+            dir.push(PathBuf::from(last.to_string()));
+            to = dir;
+        }
+        None => ()
+    }
+
+    let slug = Slug { from, to };
+    Ok(slug)
+}
 
 // #[test]
 // fn slug1_base_case() {
@@ -68,15 +84,16 @@ fn sort_directories_first() {
 }
 
 /// Scans depth first then by path name within
-pub fn scan<'a>(path: &Path) -> io::Result<Vec<PathBuf>> {
-    let mut entries: Vec<PathBuf> = WalkDir::new(path)
+pub fn scan(path: &Path) -> io::Result<Vec<PathBuf>> {
+    let mut paths: Vec<PathBuf> = WalkDir::new(path)
         .into_iter()
         .filter_map(|result| result.ok())
         .map(|ref entry| entry.path().to_path_buf())
         .collect();
     // let mut entries = entries.clone();
-    entries.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
-    Ok(entries)
+    paths.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
+    // paths = paths.iter().map(get_slug).collect();
+    Ok(paths)
 }
 //
 // #[test]
