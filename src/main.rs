@@ -10,6 +10,6 @@ use slugger::Slug;
 use std::path::PathBuf;
 fn main() {
     for path in env::args().skip(1) {
-        slugger::slug(&PathBuf::from(path));
+        slugger::scan(&PathBuf::from(path));
     }
 }
