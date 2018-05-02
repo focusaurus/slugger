@@ -19,7 +19,7 @@ pub struct Slug<'a> {
 // Based on https://docs.rs/slugify/0.1.0/src/slugify/lib.rs.html#1-355
 pub fn slug2(input: &str) -> String {
     let separator = '-';
-    let mut input: String = unidecode(input.into())
+    let input: String = unidecode(input.into())
         .to_lowercase()
         .trim()
         .trim_matches(separator)
@@ -74,7 +74,7 @@ pub fn get_slug(from: &Path) -> Result<Slug, String> {
 }
 
 pub fn compile() {
-    println!("{:?}", get_slug(&PathBuf::from("/foo/a b c.txt")));
+    println!("{:?}", get_slug(&PathBuf::from("/foo/✓ /a b c.txt")));
 }
 
 // #[test]
