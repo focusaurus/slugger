@@ -1,19 +1,23 @@
 extern crate slugger;
-#[macro_use(slugify)]
-extern crate slugify;
-extern crate walkdir;
-
-use slugify::slugify;
-use std::env;
-// use walkdir::WalkDir;
 use slugger::Slug;
+use std::env;
 use std::path::PathBuf;
 
-fn main() {
-    if let Some(from) = env::args().nth(1) {
-        let from = PathBuf::from(from);
-        if let Ok(slug) = slugger::get_slug(&from) {
-            println!("{:?}", slug.to.display());
+fn slugger(args: Vec<String>) -> Result<(), String> {
+    match args.len() {
+        0 => Err("Usage: slugger <path1> [path2] [...path3]".into()),
+        _ => {
+            let from = PathBuf::from(args.first().unwrap());
+            let slug = slugger::get_slug(&from)?;
+            Ok(())
         }
+    }
+}
+
+fn main() {
+    let args = env::args().skip(1).collect();
+    if let Err(message) = slugger(args) {
+        eprintln!("{}", message);
+        std::process::exit(10);
     }
 }
