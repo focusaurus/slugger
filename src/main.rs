@@ -1,4 +1,5 @@
 extern crate slugger;
+extern crate rsfs;
 use slugger::Slug;
 use std::env;
 use std::path::PathBuf;
@@ -9,6 +10,9 @@ fn slugger(args: Vec<String>) -> Result<(), String> {
         _ => {
             let from = PathBuf::from(args.first().unwrap());
             let slug = slugger::get_slug(&from)?;
+            let mut fs = rsfs::disk::FS;
+            slugger::rename(&mut fs, slug)?;
+
             Ok(())
         }
     }

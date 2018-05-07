@@ -3,6 +3,7 @@ extern crate unidecode;
 use rsfs::{GenFS, Metadata, Permissions};
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
+use std::io;
 
 #[derive(Debug)]
 pub struct Slug<'a> {
@@ -79,5 +80,8 @@ pub fn rename<
     fs: &mut F,
     slug: Slug,
 ) -> Result<(), String> {
-    Err("Not Impletement".into())
+    if let Err(io_error) = fs.rename(&slug.from, &slug.to) {
+        return Err("bwoke".into());
+    }
+    Ok(())
 }
