@@ -77,10 +77,21 @@ pub fn rename<
     F: GenFS<Permissions = P, Metadata = M>,
 >(
     fs: &mut F,
-    slug: Slug,
+    slug: &Slug,
 ) -> Result<(), String> {
     if let Err(io_error) = fs.rename(&slug.from, &slug.to) {
         return Err("bwoke".into());
     }
     Ok(())
+}
+
+#[test]
+fn test_rename_base() {
+    let mut fs = rsfs::mem::FS::new();
+    let from = PathBuf::from("/A");
+    let slug = get_slug(&from).unwrap();
+    fs.create_file(slug.from);
+    rename(&mut fs, &slug);
+    assert!(fs.metadata(slug.to).is_ok(), "to path should exist");
+    assert!(fs.metadata(slug.from).is_err(), "from path should not exist");
 }

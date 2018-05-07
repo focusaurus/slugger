@@ -10,7 +10,7 @@ fn slugger(args: Vec<String>) -> Result<(), String> {
             let from = PathBuf::from(args.first().unwrap());
             let slug = slugger::get_slug(&from)?;
             let mut fs = rsfs::disk::FS;
-            slugger::rename(&mut fs, slug)?;
+            slugger::rename(&mut fs, &slug)?;
 
             Ok(())
         }
