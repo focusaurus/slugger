@@ -92,6 +92,20 @@ fn test_rename_base() {
     let slug = get_slug(&from).unwrap();
     fs.create_file(slug.from);
     rename(&mut fs, &slug);
-    assert!(fs.metadata(slug.to).is_ok(), "to path should exist");
-    assert!(fs.metadata(slug.from).is_err(), "from path should not exist");
+    match fs.metadata(slug.to) {
+        Ok(metadata) => {
+            assert!(metadata.is_file());
+        }
+        Err(io_error) => {
+            panic!("to path should not have errors after rename");
+        }
+    }
+    match fs.metadata(slug.from) {
+        Ok(metadata) => {
+            panic!("from path should not exist after rename");
+        }
+        Err(io_error) => {
+            assert_eq!(io_error.kind(), std::io::ErrorKind::NotFound);
+        }
+    }
 }
