@@ -9,6 +9,7 @@ use slugify::slugify;
 use std::fs::FileType;
 extern crate unidecode;
 use unidecode::unidecode;
+use std::borrow::Cow;
 
 #[derive(Debug)]
 pub struct Slug<'a> {
@@ -18,20 +19,42 @@ pub struct Slug<'a> {
 
 pub fn slug3(input: &str) -> String {
     let separator = '-';
-    let input = input.trim().to_lowercase();
+    let input = input.trim();
+    let input = input.to_lowercase();
+    let input = input.trim_matches(separator);
+    let input = unidecode(&input);
     let mut slug = String::with_capacity(input.len());
-    for ccc in input.chars() {
-        println!("{:?}", ccc);
-        if ccc.is_whitespace() {
+    for symbol in input.chars() {
+        if symbol.is_whitespace() {
             slug.push(separator);
             continue;
         }
-        match ccc {
-            'a'...'z' | '0'...'9' | '.' => slug.push(ccc),
+        match symbol {
+            'a'...'z' | '0'...'9' | '.'| '-' => slug.push(symbol),
             _ => (), // delete anything else
         }
     }
     slug
+}
+
+#[test]
+fn test_slug3() {
+    assert_eq!(slug3("A"), "a", "uppercase to lowercase");
+    assert_eq!(slug3("Z"), "z", "uppercase to lowercase");
+    assert_eq!(slug3("a b"), "a-b", "whitespace to dash");
+    assert_eq!(slug3("a\nb"), "a-b", "whitespace to dash");
+    assert_eq!(slug3("a\tb"), "a-b", "whitespace to dash");
+    assert_eq!(slug3(" a"), "a", "trim whitespace");
+    assert_eq!(slug3("a "), "a", "trim whitespace");
+    assert_eq!(slug3("\ta\t"), "a", "trim whitespace");
+    assert_eq!(slug3("Á"), "a", "transliterate");
+    assert_eq!(slug3("a-b"), "a-b", "preserve dashes");
+    assert_eq!(slug3("a-"), "a", "trim dashes");
+    assert_eq!(slug3("-a"), "a", "trim dashes");
+    assert_eq!(slug3("-a-"), "a", "trim dashes");
+    assert_eq!(slug3("--a"), "a", "trim dashes");
+    assert_eq!(slug3("a--"), "a", "trim dashes");
+    assert_eq!(slug3("foo.txt"), "foo.txt", "preserve periods");
 }
 // Based on https://docs.rs/slugify/0.1.0/src/slugify/lib.rs.html#1-355
 pub fn slug2(input: &str) -> String {
@@ -142,6 +165,7 @@ fn sort_directories_first() {
     );
 }
 
+/// Scans depth first then by path name within
 /// Scans depth first then by path name within
 pub fn scan(path: &Path) -> io::Result<Vec<PathBuf>> {
     let mut paths: Vec<PathBuf> = WalkDir::new(path)
