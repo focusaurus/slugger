@@ -1,6 +1,5 @@
-extern crate slugger;
 extern crate rsfs;
-use slugger::Slug;
+extern crate slugger;
 use std::env;
 use std::path::PathBuf;
 
@@ -23,5 +22,13 @@ fn main() {
     if let Err(message) = slugger(args) {
         eprintln!("{}", message);
         std::process::exit(10);
+    }
+}
+
+#[test]
+fn slugger_zero_args_error() {
+    match slugger(vec![]) {
+        Ok(()) => panic!("should return Err with zero args"),
+        Err(message) => assert!(message.starts_with("Usage")),
     }
 }

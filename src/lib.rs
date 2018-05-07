@@ -3,7 +3,6 @@ extern crate unidecode;
 use rsfs::{GenFS, Metadata, Permissions};
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
-use std::io;
 
 #[derive(Debug)]
 pub struct Slug<'a> {
