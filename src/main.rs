@@ -1,11 +1,15 @@
 extern crate rsfs;
 extern crate slugger;
-use std::env;
+use std::{env, io};
+use std::error::Error;
 use std::path::PathBuf;
 
-fn slugger(args: Vec<String>) -> Result<(), String> {
+fn slugger(args: Vec<String>) -> io::Result<()> {
     match args.len() {
-        0 => Err("Usage: slugger <path1> [path2] [...path3]".into()),
+        0 => Err(io::Error::new(
+            io::ErrorKind::Other,
+            "Usage: slugger <path1> [path2] [...path3]",
+        )),
         _ => {
             let from = PathBuf::from(args.first().unwrap());
             let slug = slugger::get_slug(&from)?;
@@ -29,6 +33,6 @@ fn main() {
 fn slugger_zero_args_error() {
     match slugger(vec![]) {
         Ok(()) => panic!("should return Err with zero args"),
-        Err(message) => assert!(message.starts_with("Usage")),
+        Err(io_error) => assert!(io_error.description().starts_with("Usage")),
     }
 }

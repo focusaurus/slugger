@@ -3,6 +3,7 @@ extern crate unidecode;
 use rsfs::{GenFS, Metadata, Permissions};
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
+use std::io;
 
 #[derive(Debug)]
 pub struct Slug<'a> {
@@ -50,7 +51,7 @@ fn test_slug3() {
     assert_eq!(slug3("foo.txt"), "foo.txt", "preserve periods");
 }
 
-pub fn get_slug(from: &Path) -> Result<Slug, String> {
+pub fn get_slug(from: &Path) -> io::Result<Slug> {
     // get the last component
     let last = from.components().last();
     let last = last.unwrap();
@@ -78,11 +79,14 @@ pub fn rename<
 >(
     fs: &mut F,
     slug: &Slug,
-) -> Result<(), String> {
-    if let Err(io_error) = fs.rename(&slug.from, &slug.to) {
-        return Err("bwoke".into());
+) -> io::Result<()> {
+    if let Ok(metadata) = fs.metadata(&slug.to) {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!("Slug destination already exists: {}", &slug.to.display()),
+        ));
     }
-    Ok(())
+    fs.rename(&slug.from, &slug.to)
 }
 
 #[test]
@@ -105,7 +109,25 @@ fn test_rename_base() {
             panic!("from path should not exist after rename");
         }
         Err(io_error) => {
-            assert_eq!(io_error.kind(), std::io::ErrorKind::NotFound);
+            assert_eq!(io_error.kind(), io::ErrorKind::NotFound);
+        }
+    }
+}
+
+#[test]
+fn test_rename_no_clobber() {
+    let mut fs = rsfs::mem::FS::new();
+    let from = PathBuf::from("/A");
+    let slug = get_slug(&from).unwrap();
+    fs.create_file(&slug.from);
+    fs.create_file(&slug.to);
+    let result = rename(&mut fs, &slug);
+    match result {
+        Ok(_) => {
+            panic!("rename should not succeed if destination already exists");
+        }
+        Err(io_error) => {
+            assert_eq!(io_error.kind(), std::io::ErrorKind::AlreadyExists);
         }
     }
 }
