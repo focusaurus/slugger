@@ -1,17 +1,16 @@
 extern crate rsfs;
 extern crate unidecode;
 use rsfs::{GenFS, Metadata, Permissions};
+use std::cmp::Ordering;
+use std::io;
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
-use std::io;
-use std::cmp::Ordering;
 
 #[derive(Debug)]
 pub struct Slug<'a> {
     pub from: &'a Path,
     pub to: PathBuf,
 }
-
 
 pub fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Ordering {
     // deepest first
@@ -117,6 +116,23 @@ pub fn get_slug(from: &Path) -> io::Result<Slug> {
     Ok(slug)
 }
 
+pub fn slugger<
+    P: Permissions,
+    M: Metadata<Permissions = P>,
+    F: GenFS<Permissions = P, Metadata = M>,
+>(
+    fs: &mut F,
+    args: Vec<String>,
+) -> io::Result<()> {
+    let mut paths: Vec<PathBuf> = args.iter().map(|arg| PathBuf::from(arg)).collect();
+    paths.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
+    for path in paths.iter() {
+        let slug = get_slug(&path)?;
+        rename(fs, &slug)?;
+    }
+    Ok(())
+}
+
 pub fn rename<
     P: Permissions,
     M: Metadata<Permissions = P>,
@@ -125,6 +141,9 @@ pub fn rename<
     fs: &mut F,
     slug: &Slug,
 ) -> io::Result<()> {
+    if slug.to == slug.from {
+        return Ok(());
+    }
     if let Ok(_) = fs.metadata(&slug.to) {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
@@ -174,6 +193,17 @@ fn test_rename_no_clobber() {
         Err(io_error) => {
             assert_eq!(io_error.kind(), std::io::ErrorKind::AlreadyExists);
         }
+    }
+}
+
+#[test]
+fn test_rename_no_op() {
+    let mut fs = rsfs::mem::FS::new();
+    let from = PathBuf::from("/a");
+    let slug = get_slug(&from).unwrap();
+    fs.create_file(&slug.from).unwrap();
+    if let Err(_) = rename(&mut fs, &slug) {
+        panic!("should not error if existing file is already a slug");
     }
 }
 

@@ -1,32 +1,29 @@
 extern crate rsfs;
 extern crate slugger;
+use rsfs::{GenFS, Metadata, Permissions};
 use std::{env, io};
-use std::error::Error;
-use std::path::PathBuf;
-use slugger::sort_depth_then_directories;
 
-fn slugger(args: Vec<String>) -> io::Result<()> {
-    match args.len() {
-        0 => Err(io::Error::new(
+fn main_result<
+    P: Permissions,
+    M: Metadata<Permissions = P>,
+    F: GenFS<Permissions = P, Metadata = M>,
+>(
+    fs: &mut F,
+    args: Vec<String>,
+) -> io::Result<()> {
+    if args.len() < 1 {
+        return Err(io::Error::new(
             io::ErrorKind::Other,
             "Usage: slugger <path1> [path2] [...path3]",
-        )),
-        _ => {
-            let mut paths: Vec<PathBuf> = args.iter().map(|arg| PathBuf::from(arg)).collect();
-            paths.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
-            let mut fs = rsfs::disk::FS;
-            for path in paths.iter() {
-                let slug = slugger::get_slug(&path)?;
-                slugger::rename(&mut fs, &slug)?;
-            }
-            Ok(())
-        }
+        ));
     }
+    slugger::slugger(fs, args)
 }
 
 fn main() {
     let args = env::args().skip(1).collect();
-    if let Err(message) = slugger(args) {
+    let mut fs = rsfs::disk::FS;
+    if let Err(message) = main_result(&mut fs, args) {
         eprintln!("{}", message);
         std::process::exit(10);
     }
@@ -34,7 +31,9 @@ fn main() {
 
 #[test]
 fn slugger_zero_args_error() {
-    match slugger(vec![]) {
+    use std::error::Error;
+    let mut fs = rsfs::mem::FS::new();
+    match main_result(&mut fs, vec![]) {
         Ok(()) => panic!("should return Err with zero args"),
         Err(io_error) => assert!(io_error.description().starts_with("Usage")),
     }
