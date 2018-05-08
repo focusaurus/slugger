@@ -4,6 +4,7 @@ use rsfs::{GenFS, Metadata, Permissions};
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
 use std::io;
+use std::cmp::Ordering;
 
 #[derive(Debug)]
 pub struct Slug<'a> {
@@ -11,7 +12,51 @@ pub struct Slug<'a> {
     pub to: PathBuf,
 }
 
-pub fn slug3(input: &str) -> String {
+
+pub fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Ordering {
+    // deepest first
+    path_a
+        .components()
+        .count()
+        .cmp(&path_b.components().count())
+        .reverse()
+    // directories first (rust considers true>false)
+        .then(path_a.is_dir().cmp(&path_b.is_dir()).reverse())
+    // then files sorted by name
+       .then(path_a.cmp(&path_b))
+}
+
+#[test]
+fn sort_by_name() {
+    let p1 = PathBuf::from("a");
+    let p2 = PathBuf::from("b");
+    assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
+}
+
+#[test]
+fn sort_by_depth() {
+    let p1 = PathBuf::from("b/b");
+    let p2 = PathBuf::from("a");
+    assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
+}
+
+#[test]
+fn sort_directories_first() {
+    let src_dir = PathBuf::from(file!());
+    let src_dir = src_dir.parent().unwrap();
+    let src_path = PathBuf::from("s"); // earlier same name but file not dir
+    println!("true.cmp(false) {:?}", true.cmp(&false));
+    println!("src_dir components {:?}", src_dir.components().count());
+    println!("src_dir is_dir {:?}", src_dir.is_dir());
+    println!("src_path components {:?}", src_path.components().count());
+    println!("src_path is_dir {:?}", src_path.is_dir());
+    assert_eq!(
+        sort_depth_then_directories(&src_dir, &src_path),
+        Ordering::Less
+    );
+}
+
+pub fn slug(input: &str) -> String {
     let separator = '-';
     let input = input.trim();
     let input = input.to_lowercase();
@@ -32,23 +77,23 @@ pub fn slug3(input: &str) -> String {
 }
 
 #[test]
-fn test_slug3() {
-    assert_eq!(slug3("A"), "a", "uppercase to lowercase");
-    assert_eq!(slug3("Z"), "z", "uppercase to lowercase");
-    assert_eq!(slug3("a b"), "a-b", "whitespace to dash");
-    assert_eq!(slug3("a\nb"), "a-b", "whitespace to dash");
-    assert_eq!(slug3("a\tb"), "a-b", "whitespace to dash");
-    assert_eq!(slug3(" a"), "a", "trim whitespace");
-    assert_eq!(slug3("a "), "a", "trim whitespace");
-    assert_eq!(slug3("\ta\t"), "a", "trim whitespace");
-    assert_eq!(slug3("Á"), "a", "transliterate");
-    assert_eq!(slug3("a-b"), "a-b", "preserve dashes");
-    assert_eq!(slug3("a-"), "a", "trim dashes");
-    assert_eq!(slug3("-a"), "a", "trim dashes");
-    assert_eq!(slug3("-a-"), "a", "trim dashes");
-    assert_eq!(slug3("--a"), "a", "trim dashes");
-    assert_eq!(slug3("a--"), "a", "trim dashes");
-    assert_eq!(slug3("foo.txt"), "foo.txt", "preserve periods");
+fn test_slug() {
+    assert_eq!(slug("A"), "a", "uppercase to lowercase");
+    assert_eq!(slug("Z"), "z", "uppercase to lowercase");
+    assert_eq!(slug("a b"), "a-b", "whitespace to dash");
+    assert_eq!(slug("a\nb"), "a-b", "whitespace to dash");
+    assert_eq!(slug("a\tb"), "a-b", "whitespace to dash");
+    assert_eq!(slug(" a"), "a", "trim whitespace");
+    assert_eq!(slug("a "), "a", "trim whitespace");
+    assert_eq!(slug("\ta\t"), "a", "trim whitespace");
+    assert_eq!(slug("Á"), "a", "transliterate");
+    assert_eq!(slug("a-b"), "a-b", "preserve dashes");
+    assert_eq!(slug("a-"), "a", "trim dashes");
+    assert_eq!(slug("-a"), "a", "trim dashes");
+    assert_eq!(slug("-a-"), "a", "trim dashes");
+    assert_eq!(slug("--a"), "a", "trim dashes");
+    assert_eq!(slug("a--"), "a", "trim dashes");
+    assert_eq!(slug("foo.txt"), "foo.txt", "preserve periods");
 }
 
 pub fn get_slug(from: &Path) -> io::Result<Slug> {
@@ -57,7 +102,7 @@ pub fn get_slug(from: &Path) -> io::Result<Slug> {
     let last = last.unwrap();
     let last = last.as_os_str();
     let last = last.to_string_lossy(); // FIXME error handling
-    let mut to = PathBuf::from(slug3(&last));
+    let mut to = PathBuf::from(slug(&last));
     let parent = from.parent();
     match parent {
         Some(dir) => {

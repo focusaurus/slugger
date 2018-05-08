@@ -3,6 +3,7 @@ extern crate slugger;
 use std::{env, io};
 use std::error::Error;
 use std::path::PathBuf;
+use slugger::sort_depth_then_directories;
 
 fn slugger(args: Vec<String>) -> io::Result<()> {
     match args.len() {
@@ -11,11 +12,13 @@ fn slugger(args: Vec<String>) -> io::Result<()> {
             "Usage: slugger <path1> [path2] [...path3]",
         )),
         _ => {
-            let from = PathBuf::from(args.first().unwrap());
-            let slug = slugger::get_slug(&from)?;
+            let mut paths: Vec<PathBuf> = args.iter().map(|arg| PathBuf::from(arg)).collect();
+            paths.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
             let mut fs = rsfs::disk::FS;
-            slugger::rename(&mut fs, &slug)?;
-
+            for path in paths.iter() {
+                let slug = slugger::get_slug(&path)?;
+                slugger::rename(&mut fs, &slug)?;
+            }
             Ok(())
         }
     }
