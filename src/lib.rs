@@ -80,7 +80,7 @@ pub fn rename<
     fs: &mut F,
     slug: &Slug,
 ) -> io::Result<()> {
-    if let Ok(metadata) = fs.metadata(&slug.to) {
+    if let Ok(_) = fs.metadata(&slug.to) {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
             format!("Slug destination already exists: {}", &slug.to.display()),
@@ -94,18 +94,18 @@ fn test_rename_base() {
     let mut fs = rsfs::mem::FS::new();
     let from = PathBuf::from("/A");
     let slug = get_slug(&from).unwrap();
-    fs.create_file(slug.from);
-    rename(&mut fs, &slug);
+    fs.create_file(slug.from).unwrap();
+    rename(&mut fs, &slug).unwrap();
     match fs.metadata(slug.to) {
         Ok(metadata) => {
             assert!(metadata.is_file());
         }
-        Err(io_error) => {
+        Err(_) => {
             panic!("to path should not have errors after rename");
         }
     }
     match fs.metadata(slug.from) {
-        Ok(metadata) => {
+        Ok(_) => {
             panic!("from path should not exist after rename");
         }
         Err(io_error) => {
@@ -119,8 +119,8 @@ fn test_rename_no_clobber() {
     let mut fs = rsfs::mem::FS::new();
     let from = PathBuf::from("/A");
     let slug = get_slug(&from).unwrap();
-    fs.create_file(&slug.from);
-    fs.create_file(&slug.to);
+    fs.create_file(&slug.from).unwrap();
+    fs.create_file(&slug.to).unwrap();
     let result = rename(&mut fs, &slug);
     match result {
         Ok(_) => {
@@ -129,5 +129,25 @@ fn test_rename_no_clobber() {
         Err(io_error) => {
             assert_eq!(io_error.kind(), std::io::ErrorKind::AlreadyExists);
         }
+    }
+}
+
+#[test]
+fn test_nested_file() {
+    let mut fs = rsfs::mem::FS::new();
+    let mut from = PathBuf::from("/Dir1");
+    fs.create_dir(&from).unwrap();
+    from.push("Dir Two");
+    fs.create_dir(&from).unwrap();
+    from.push("file one");
+    fs.create_file(&from).unwrap();
+    let slug = get_slug(&from).unwrap();
+    assert_eq!(slug.to, PathBuf::from("/Dir1/Dir Two/file-one"));
+    rename(&mut fs, &slug).unwrap();
+    if let Err(_) = fs.metadata(&slug.to) {
+        panic!("to path should now exist")
+    }
+    if let Ok(_) = fs.metadata(&slug.from) {
+        panic!("from path should not exist")
     }
 }
