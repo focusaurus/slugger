@@ -144,10 +144,9 @@ fn test_nested_file() {
     let slug = get_slug(&from).unwrap();
     assert_eq!(slug.to, PathBuf::from("/Dir1/Dir Two/file-one"));
     rename(&mut fs, &slug).unwrap();
-    if let Err(_) = fs.metadata(&slug.to) {
-        panic!("to path should now exist")
-    }
-    if let Ok(_) = fs.metadata(&slug.from) {
-        panic!("from path should not exist")
-    }
+    fs.metadata(&slug.to).expect("to path should exist");
+    assert!(
+        fs.metadata(&slug.from).is_err(),
+        "from path should not exist"
+    );
 }
