@@ -9,7 +9,7 @@ fn main_result<
     F: GenFS<Permissions = P, Metadata = M>,
 >(
     fs: &mut F,
-    args: Vec<String>,
+    args: &[String],
 ) -> io::Result<()> {
     if args.len() < 1 {
         return Err(io::Error::new(
@@ -17,13 +17,13 @@ fn main_result<
             "Usage: slugger <path1> [path2] [...path3]",
         ));
     }
-    slugger::slugger(fs, args)
+    slugger::slugger(fs, &args)
 }
 
 fn main() {
-    let args = env::args().skip(1).collect();
+    let args = vec!(env::args().skip(1).collect());
     let mut fs = rsfs::disk::FS;
-    if let Err(message) = main_result(&mut fs, args) {
+    if let Err(message) = main_result(&mut fs, &args) {
         eprintln!("{}", message);
         std::process::exit(10);
     }
@@ -33,7 +33,7 @@ fn main() {
 fn slugger_zero_args_error() {
     use std::error::Error;
     let mut fs = rsfs::mem::FS::new();
-    match main_result(&mut fs, vec![]) {
+    match main_result(&mut fs, &vec![]) {
         Ok(()) => panic!("should return Err with zero args"),
         Err(io_error) => assert!(io_error.description().starts_with("Usage")),
     }

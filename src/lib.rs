@@ -102,14 +102,10 @@ pub fn get_slug(from: &Path) -> io::Result<Slug> {
     let last = last.as_os_str();
     let last = last.to_string_lossy(); // FIXME error handling
     let mut to = PathBuf::from(slug(&last));
-    let parent = from.parent();
-    match parent {
-        Some(dir) => {
-            let mut dir = dir.to_path_buf();
-            dir.push(to);
-            to = dir;
-        }
-        None => (),
+    if let Some(dir) = from.parent() {
+        let mut dir = dir.to_path_buf();
+        dir.push(to);
+        to = dir;
     }
 
     let slug = Slug { from, to };
@@ -122,11 +118,11 @@ pub fn slugger<
     F: GenFS<Permissions = P, Metadata = M>,
 >(
     fs: &mut F,
-    args: Vec<String>,
+    args: &[String],
 ) -> io::Result<()> {
-    let mut paths: Vec<PathBuf> = args.iter().map(|arg| PathBuf::from(arg)).collect();
+    let mut paths: Vec<PathBuf> = args.iter().map(PathBuf::from).collect();
     paths.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
-    for path in paths.iter() {
+    for path in &paths {
         let slug = get_slug(&path)?;
         rename(fs, &slug)?;
     }
@@ -144,7 +140,7 @@ pub fn rename<
     if slug.to == slug.from {
         return Ok(());
     }
-    if let Ok(_) = fs.metadata(&slug.to) {
+    if fs.metadata(&slug.to).is_ok() {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
             format!("Slug destination already exists: {}", &slug.to.display()),
@@ -238,7 +234,7 @@ fn test_slugger_depth_first() {
         "/dir a/file 2".into(),
     ];
     // Ensure the deep files get renamed before their containing directory
-    slugger(&mut fs, paths).unwrap();
+    slugger(&mut fs, &paths).unwrap();
     fs.metadata("/dir-a").unwrap();
     fs.metadata("/dir-a/file-1").unwrap();
     fs.metadata("/dir-a/file-2").unwrap();

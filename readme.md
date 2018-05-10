@@ -6,22 +6,27 @@ A unix filesystem utility to rename files using a restricted url-safe character 
 
 * Avoid bugs and vulnerabilities due to poor handling of problematic characters including spaces, quotes, etc
 * Simplify things by sticking with lowercase
+* Allow paths to be typed without keyboard gymnastics
+* Allow easy tab completion
 
-## Development Plans and Notes to Self
+## Usage
 
-These are for me not you. No need to read them.
+`slugger "some path/with WEIRD/ÑÄmes.pdf" "another weird/path.txt"`
 
-1. Given a path, generate a sorted list of paths in depth-first order safe to sluggify
-1. Given a list of paths, generate a list of from/to slugs
-1.
+## How files are renamed
 
-```
-unit-test/sub 1/z z
-unit-test/sub 1/a a
-unit-test/sub 2/b b
-unit-test/sub 2/y y
-unit-test
-unit-test/a a
-unit-test/b b.txt
+- Convert to lowercase
+- Trim leading and trailing whitespace
+- Remove repeated dashes
+- Do a "unidecode" to translate mostly to ASCII
+- Convert all whitespaces to dash
+- Delete anything else
 
-```
+## Behavior notes
+
+- slugger will not clobber existing files. If the slugged file already exists, it will abort and exit with an error code.
+- slugger is safe to run on already-slugged files. It will no-op and exit success (it's idempotent).
+
+## How correct and stable is it?
+
+Uh, it has some decent unit tests but it's brand new and should be considered unreliable for now.
