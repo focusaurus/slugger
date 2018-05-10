@@ -225,3 +225,21 @@ fn test_nested_file() {
         "from path should not exist"
     );
 }
+
+#[test]
+fn test_slugger_depth_first() {
+    let mut fs = rsfs::mem::FS::new();
+    fs.create_dir("/dir a").unwrap();
+    fs.create_file("/dir a/file 1").unwrap();
+    fs.create_file("/dir a/file 2").unwrap();
+    let paths: Vec<String> = vec![
+        "/dir a".into(),
+        "/dir a/file 1".into(),
+        "/dir a/file 2".into(),
+    ];
+    // Ensure the deep files get renamed before their containing directory
+    slugger(&mut fs, paths).unwrap();
+    fs.metadata("/dir-a").unwrap();
+    fs.metadata("/dir-a/file-1").unwrap();
+    fs.metadata("/dir-a/file-2").unwrap();
+}
