@@ -12,7 +12,7 @@ pub struct Slug<'a> {
     pub to: PathBuf,
 }
 
-pub fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Ordering {
+fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Ordering {
     // deepest first
     path_a
         .components()
@@ -23,36 +23,6 @@ pub fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Or
         .then(path_a.is_dir().cmp(&path_b.is_dir()).reverse())
     // then files sorted by name
        .then(path_a.cmp(&path_b))
-}
-
-#[test]
-fn sort_by_name() {
-    let p1 = PathBuf::from("a");
-    let p2 = PathBuf::from("b");
-    assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
-}
-
-#[test]
-fn sort_by_depth() {
-    let p1 = PathBuf::from("b/b");
-    let p2 = PathBuf::from("a");
-    assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
-}
-
-#[test]
-fn sort_directories_first() {
-    let src_dir = PathBuf::from(file!());
-    let src_dir = src_dir.parent().unwrap();
-    let src_path = PathBuf::from("s"); // earlier same name but file not dir
-    println!("true.cmp(false) {:?}", true.cmp(&false));
-    println!("src_dir components {:?}", src_dir.components().count());
-    println!("src_dir is_dir {:?}", src_dir.is_dir());
-    println!("src_path components {:?}", src_path.components().count());
-    println!("src_path is_dir {:?}", src_path.is_dir());
-    assert_eq!(
-        sort_depth_then_directories(&src_dir, &src_path),
-        Ordering::Less
-    );
 }
 
 pub fn slug(input: &str) -> String {
@@ -73,26 +43,6 @@ pub fn slug(input: &str) -> String {
         }
     }
     slug
-}
-
-#[test]
-fn test_slug() {
-    assert_eq!(slug("A"), "a", "uppercase to lowercase");
-    assert_eq!(slug("Z"), "z", "uppercase to lowercase");
-    assert_eq!(slug("a b"), "a-b", "whitespace to dash");
-    assert_eq!(slug("a\nb"), "a-b", "whitespace to dash");
-    assert_eq!(slug("a\tb"), "a-b", "whitespace to dash");
-    assert_eq!(slug(" a"), "a", "trim whitespace");
-    assert_eq!(slug("a "), "a", "trim whitespace");
-    assert_eq!(slug("\ta\t"), "a", "trim whitespace");
-    assert_eq!(slug("Á"), "a", "transliterate");
-    assert_eq!(slug("a-b"), "a-b", "preserve dashes");
-    assert_eq!(slug("a-"), "a", "trim dashes");
-    assert_eq!(slug("-a"), "a", "trim dashes");
-    assert_eq!(slug("-a-"), "a", "trim dashes");
-    assert_eq!(slug("--a"), "a", "trim dashes");
-    assert_eq!(slug("a--"), "a", "trim dashes");
-    assert_eq!(slug("foo.txt"), "foo.txt", "preserve periods");
 }
 
 pub fn get_slug(from: &Path) -> io::Result<Slug> {
@@ -149,93 +99,149 @@ pub fn rename<
     fs.rename(&slug.from, &slug.to)
 }
 
-#[test]
-fn test_rename_base() {
-    let mut fs = rsfs::mem::FS::new();
-    let from = PathBuf::from("/A");
-    let slug = get_slug(&from).unwrap();
-    fs.create_file(slug.from).unwrap();
-    rename(&mut fs, &slug).unwrap();
-    match fs.metadata(slug.to) {
-        Ok(metadata) => {
-            assert!(metadata.is_file());
+#[cfg(test)]
+mod test {
+    use std::path::PathBuf;
+    use super::*;
+
+    #[test]
+    fn sort_by_name() {
+        let p1 = PathBuf::from("a");
+        let p2 = PathBuf::from("b");
+        assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
+    }
+
+    #[test]
+    fn sort_by_depth() {
+        let p1 = PathBuf::from("b/b");
+        let p2 = PathBuf::from("a");
+        assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
+    }
+
+    #[test]
+    fn sort_directories_first() {
+        let src_dir = PathBuf::from(file!());
+        let src_dir = src_dir.parent().unwrap();
+        let src_path = PathBuf::from("s"); // earlier same name but file not dir
+        println!("true.cmp(false) {:?}", true.cmp(&false));
+        println!("src_dir components {:?}", src_dir.components().count());
+        println!("src_dir is_dir {:?}", src_dir.is_dir());
+        println!("src_path components {:?}", src_path.components().count());
+        println!("src_path is_dir {:?}", src_path.is_dir());
+        assert_eq!(
+            sort_depth_then_directories(&src_dir, &src_path),
+            Ordering::Less
+        );
+    }
+
+    #[test]
+    fn test_slug() {
+        assert_eq!(slug("A"), "a", "uppercase to lowercase");
+        assert_eq!(slug("Z"), "z", "uppercase to lowercase");
+        assert_eq!(slug("a b"), "a-b", "whitespace to dash");
+        assert_eq!(slug("a\nb"), "a-b", "whitespace to dash");
+        assert_eq!(slug("a\tb"), "a-b", "whitespace to dash");
+        assert_eq!(slug(" a"), "a", "trim whitespace");
+        assert_eq!(slug("a "), "a", "trim whitespace");
+        assert_eq!(slug("\ta\t"), "a", "trim whitespace");
+        assert_eq!(slug("Á"), "a", "transliterate");
+        assert_eq!(slug("a-b"), "a-b", "preserve dashes");
+        assert_eq!(slug("a-"), "a", "trim dashes");
+        assert_eq!(slug("-a"), "a", "trim dashes");
+        assert_eq!(slug("-a-"), "a", "trim dashes");
+        assert_eq!(slug("--a"), "a", "trim dashes");
+        assert_eq!(slug("a--"), "a", "trim dashes");
+        assert_eq!(slug("foo.txt"), "foo.txt", "preserve periods");
+    }
+
+    #[test]
+    fn test_rename_base() {
+        let mut fs = rsfs::mem::FS::new();
+        let from = PathBuf::from("/A");
+        let slug = get_slug(&from).unwrap();
+        fs.create_file(slug.from).unwrap();
+        rename(&mut fs, &slug).unwrap();
+        match fs.metadata(slug.to) {
+            Ok(metadata) => {
+                assert!(metadata.is_file());
+            }
+            Err(_) => {
+                panic!("to path should not have errors after rename");
+            }
         }
-        Err(_) => {
-            panic!("to path should not have errors after rename");
+        match fs.metadata(slug.from) {
+            Ok(_) => {
+                panic!("from path should not exist after rename");
+            }
+            Err(io_error) => {
+                assert_eq!(io_error.kind(), io::ErrorKind::NotFound);
+            }
         }
     }
-    match fs.metadata(slug.from) {
-        Ok(_) => {
-            panic!("from path should not exist after rename");
-        }
-        Err(io_error) => {
-            assert_eq!(io_error.kind(), io::ErrorKind::NotFound);
-        }
-    }
-}
 
-#[test]
-fn test_rename_no_clobber() {
-    let mut fs = rsfs::mem::FS::new();
-    let from = PathBuf::from("/A");
-    let slug = get_slug(&from).unwrap();
-    fs.create_file(&slug.from).unwrap();
-    fs.create_file(&slug.to).unwrap();
-    let result = rename(&mut fs, &slug);
-    match result {
-        Ok(_) => {
-            panic!("rename should not succeed if destination already exists");
-        }
-        Err(io_error) => {
-            assert_eq!(io_error.kind(), std::io::ErrorKind::AlreadyExists);
+    #[test]
+    fn test_rename_no_clobber() {
+        let mut fs = rsfs::mem::FS::new();
+        let from = PathBuf::from("/A");
+        let slug = get_slug(&from).unwrap();
+        fs.create_file(&slug.from).unwrap();
+        fs.create_file(&slug.to).unwrap();
+        let result = rename(&mut fs, &slug);
+        match result {
+            Ok(_) => {
+                panic!("rename should not succeed if destination already exists");
+            }
+            Err(io_error) => {
+                assert_eq!(io_error.kind(), std::io::ErrorKind::AlreadyExists);
+            }
         }
     }
-}
 
-#[test]
-fn test_rename_no_op() {
-    let mut fs = rsfs::mem::FS::new();
-    let from = PathBuf::from("/a");
-    let slug = get_slug(&from).unwrap();
-    fs.create_file(&slug.from).unwrap();
-    if let Err(_) = rename(&mut fs, &slug) {
-        panic!("should not error if existing file is already a slug");
+    #[test]
+    fn test_rename_no_op() {
+        let mut fs = rsfs::mem::FS::new();
+        let from = PathBuf::from("/a");
+        let slug = get_slug(&from).unwrap();
+        fs.create_file(&slug.from).unwrap();
+        if let Err(_) = rename(&mut fs, &slug) {
+            panic!("should not error if existing file is already a slug");
+        }
     }
-}
 
-#[test]
-fn test_nested_file() {
-    let mut fs = rsfs::mem::FS::new();
-    let mut from = PathBuf::from("/Dir1");
-    fs.create_dir(&from).unwrap();
-    from.push("Dir Two");
-    fs.create_dir(&from).unwrap();
-    from.push("file one");
-    fs.create_file(&from).unwrap();
-    let slug = get_slug(&from).unwrap();
-    assert_eq!(slug.to, PathBuf::from("/Dir1/Dir Two/file-one"));
-    rename(&mut fs, &slug).unwrap();
-    fs.metadata(&slug.to).expect("to path should exist");
-    assert!(
-        fs.metadata(&slug.from).is_err(),
-        "from path should not exist"
-    );
-}
+    #[test]
+    fn test_nested_file() {
+        let mut fs = rsfs::mem::FS::new();
+        let mut from = PathBuf::from("/Dir1");
+        fs.create_dir(&from).unwrap();
+        from.push("Dir Two");
+        fs.create_dir(&from).unwrap();
+        from.push("file one");
+        fs.create_file(&from).unwrap();
+        let slug = get_slug(&from).unwrap();
+        assert_eq!(slug.to, PathBuf::from("/Dir1/Dir Two/file-one"));
+        rename(&mut fs, &slug).unwrap();
+        fs.metadata(&slug.to).expect("to path should exist");
+        assert!(
+            fs.metadata(&slug.from).is_err(),
+            "from path should not exist"
+        );
+    }
 
-#[test]
-fn test_slugger_depth_first() {
-    let mut fs = rsfs::mem::FS::new();
-    fs.create_dir("/dir a").unwrap();
-    fs.create_file("/dir a/file 1").unwrap();
-    fs.create_file("/dir a/file 2").unwrap();
-    let paths: Vec<String> = vec![
-        "/dir a".into(),
-        "/dir a/file 1".into(),
-        "/dir a/file 2".into(),
-    ];
-    // Ensure the deep files get renamed before their containing directory
-    slugger(&mut fs, &paths).unwrap();
-    fs.metadata("/dir-a").unwrap();
-    fs.metadata("/dir-a/file-1").unwrap();
-    fs.metadata("/dir-a/file-2").unwrap();
+    #[test]
+    fn test_slugger_depth_first() {
+        let mut fs = rsfs::mem::FS::new();
+        fs.create_dir("/dir a").unwrap();
+        fs.create_file("/dir a/file 1").unwrap();
+        fs.create_file("/dir a/file 2").unwrap();
+        let paths: Vec<String> = vec![
+            "/dir a".into(),
+            "/dir a/file 1".into(),
+            "/dir a/file 2".into(),
+        ];
+        // Ensure the deep files get renamed before their containing directory
+        slugger(&mut fs, &paths).unwrap();
+        fs.metadata("/dir-a").unwrap();
+        fs.metadata("/dir-a/file-1").unwrap();
+        fs.metadata("/dir-a/file-2").unwrap();
+    }
 }

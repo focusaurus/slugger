@@ -21,7 +21,7 @@ fn main_result<
 }
 
 fn main() {
-    let args = vec!(env::args().skip(1).collect());
+    let args = vec![env::args().skip(1).collect()];
     let mut fs = rsfs::disk::FS;
     if let Err(message) = main_result(&mut fs, &args) {
         eprintln!("{}", message);
@@ -29,12 +29,17 @@ fn main() {
     }
 }
 
-#[test]
-fn slugger_zero_args_error() {
-    use std::error::Error;
-    let mut fs = rsfs::mem::FS::new();
-    match main_result(&mut fs, &vec![]) {
-        Ok(()) => panic!("should return Err with zero args"),
-        Err(io_error) => assert!(io_error.description().starts_with("Usage")),
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn slugger_zero_args_error() {
+        use std::error::Error;
+        let mut fs = rsfs::mem::FS::new();
+        match main_result(&mut fs, &vec![]) {
+            Ok(()) => panic!("should return Err with zero args"),
+            Err(io_error) => assert!(io_error.description().starts_with("Usage")),
+        }
     }
 }
