@@ -90,6 +90,12 @@ pub fn rename<
     if slug.to == slug.from {
         return Ok(());
     }
+    if let Err(_err) = fs.metadata(&slug.from) {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Slug source file not found: {}", &slug.from.display()),
+        ));
+    }
     if fs.metadata(&slug.to).is_ok() {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
@@ -103,6 +109,7 @@ pub fn rename<
 mod test {
     use std::path::PathBuf;
     use super::*;
+    use std::error::Error;
 
     #[test]
     fn sort_by_name() {
@@ -243,5 +250,18 @@ mod test {
         fs.metadata("/dir-a").unwrap();
         fs.metadata("/dir-a/file-1").unwrap();
         fs.metadata("/dir-a/file-2").unwrap();
+    }
+
+    #[test]
+    fn test_slugger_from_not_found() {
+        let mut fs = rsfs::mem::FS::new();
+        let paths: Vec<String> = vec!["/from not found".into()];
+        // Ensure the deep files get renamed before their containing directory
+        let result = slugger(&mut fs, &paths);
+        assert!(result.is_err());
+        let err = result.err().unwrap();
+        let description = err.description();
+        assert!(description.starts_with("Slug source file not found"));
+        assert!(description.contains("/from not found"));
     }
 }

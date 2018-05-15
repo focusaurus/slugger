@@ -20,10 +20,13 @@ fn slugger_main<
     slugger::slugger(fs, &args)
 }
 
-fn main() -> io::Result<()> {
-    let args = vec![env::args().skip(1).collect()];
+fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
     let mut fs = rsfs::disk::FS;
-    slugger_main(&mut fs, &args)
+    if let Err(message) = slugger_main(&mut fs, &args) {
+        eprintln!("{}", message);
+        std::process::exit(10);
+    }
 }
 
 #[cfg(test)]
