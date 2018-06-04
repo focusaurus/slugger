@@ -17,4 +17,4 @@ cd "$(dirname "$0")/.."
 exec docker run --rm --interactive --tty \
   --volume "${PWD}:/opt" --workdir /opt \
   --env USER=root \
-  nrdmn/clippy:0.0.197 /bin/bash
+  nrdmn/clippy:0.0.197 "${1-/bin/bash}"
