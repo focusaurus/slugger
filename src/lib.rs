@@ -19,10 +19,10 @@ fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Orderi
         .count()
         .cmp(&path_b.components().count())
         .reverse()
-    // directories first (rust considers true>false)
+        // directories first (rust considers true>false)
         .then(path_a.is_dir().cmp(&path_b.is_dir()).reverse())
-    // then files sorted by name
-       .then(path_a.cmp(&path_b))
+        // then files sorted by name
+        .then(path_a.cmp(&path_b))
 }
 
 pub fn slug(input: &str) -> String {
@@ -107,9 +107,9 @@ pub fn rename<
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
     use super::*;
     use std::error::Error;
+    use std::path::PathBuf;
 
     #[test]
     fn sort_by_name() {
