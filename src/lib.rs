@@ -2,6 +2,7 @@ extern crate rsfs;
 extern crate unidecode;
 use rsfs::{GenFS, Metadata, Permissions};
 use std::cmp::Ordering;
+use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
@@ -16,15 +17,26 @@ pub struct Slug<'a> {
 #[derive(Debug)]
 pub struct Slug2 {
     pub from: PathBuf,
-    pub to: PathBuf,
+    pub to: io::Result<PathBuf>,
 }
 
 impl From<PathBuf> for Slug2 {
     fn from(from_path_buf: PathBuf) -> Self {
-        let to_path_buf = from_path_buf.clone();
+        let to = get_slug2(from_path_buf.clone());
         Slug2 {
             from: from_path_buf,
-            to: to_path_buf,
+            to: to,
+        }
+    }
+}
+
+
+impl fmt::Display for Slug2 {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        match self.to {
+            // TODO error handling for to_string_lossy
+            Ok(ref to) => write!(formatter, "{}", to.to_string_lossy()),
+            Err(_) => write!(formatter, ""),
         }
     }
 }
@@ -83,6 +95,22 @@ pub fn get_slug(from: &Path) -> io::Result<Slug> {
 
     let slug = Slug { from, to };
     Ok(slug)
+}
+
+fn get_slug2(from: PathBuf) -> io::Result<PathBuf> {
+    // get the last component
+    let last = from.components().last();
+    let last = last.unwrap();
+    let last = last.as_os_str();
+    let last = last.to_string_lossy(); // FIXME error handling
+    let mut to = PathBuf::from(slug(&last));
+    if let Some(dir) = from.parent() {
+        let mut dir = dir.to_path_buf();
+        dir.push(to);
+        to = dir;
+    }
+
+    Ok(to)
 }
 
 pub fn slugger<
