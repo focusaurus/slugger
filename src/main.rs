@@ -1,9 +1,9 @@
 extern crate rsfs;
 extern crate slugger;
 use rsfs::{GenFS, Metadata, Permissions};
-use std::{env, io};
 use std::io::prelude::*;
 use std::path::PathBuf;
+use std::{env, io};
 
 fn slugger_main<
     P: Permissions,
@@ -32,7 +32,6 @@ fn main1() {
 }
 
 fn main() {
-
     let stdin = io::stdin();
     for result in stdin.lock().lines() {
         // println!("{}", slugger::slug_line(line));
