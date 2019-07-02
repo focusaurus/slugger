@@ -5,11 +5,34 @@ use std::cmp::Ordering;
 use std::io;
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
+// use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Slug<'a> {
     pub from: &'a Path,
     pub to: PathBuf,
+}
+
+#[derive(Debug)]
+pub struct Slug2 {
+    pub from: PathBuf,
+    pub to: PathBuf,
+}
+
+impl From<PathBuf> for Slug2 {
+    fn from(from_path_buf: PathBuf) -> Self {
+        let to_path_buf = from_path_buf.clone();
+        Slug2 {
+            from: from_path_buf,
+            to: to_path_buf
+        }
+    }
+}
+
+impl From<String> for Slug2 {
+    fn from(from_string: String) -> Self {
+        Slug2::from(PathBuf::from(from_string))
+    }
 }
 
 fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Ordering {
@@ -78,6 +101,10 @@ pub fn slugger<
     }
     Ok(())
 }
+
+// pub fn slug_line<'a>(line: String<'a>) -> io::Result<Slug<'a>> {
+//     get_slug(&PathBuf::from(line))
+// }
 
 pub fn rename<
     P: Permissions,

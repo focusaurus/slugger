@@ -2,6 +2,8 @@ extern crate rsfs;
 extern crate slugger;
 use rsfs::{GenFS, Metadata, Permissions};
 use std::{env, io};
+use std::io::prelude::*;
+use std::path::PathBuf;
 
 fn slugger_main<
     P: Permissions,
@@ -20,12 +22,23 @@ fn slugger_main<
     slugger::slugger(fs, &args)
 }
 
-fn main() {
+fn main1() {
     let args: Vec<String> = env::args().skip(1).collect();
     let mut fs = rsfs::disk::FS;
     if let Err(message) = slugger_main(&mut fs, &args) {
         eprintln!("{}", message);
         std::process::exit(10);
+    }
+}
+
+fn main() {
+
+    let stdin = io::stdin();
+    for result in stdin.lock().lines() {
+        // println!("{}", slugger::slug_line(line));
+        // let from_path_buf = PathBuf::from(result.unwrap());
+        let slug = slugger::Slug2::from(result.unwrap());
+        println!("{:?}", slug);
     }
 }
 
