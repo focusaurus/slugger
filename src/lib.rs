@@ -30,6 +30,11 @@ impl From<PathBuf> for Slug2 {
     }
 }
 
+impl From<String> for Slug2 {
+    fn from(from_string: String) -> Self {
+        Slug2::from(PathBuf::from(from_string))
+    }
+}
 
 impl fmt::Display for Slug2 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -38,12 +43,6 @@ impl fmt::Display for Slug2 {
             Ok(ref to) => write!(formatter, "{}", to.to_string_lossy()),
             Err(_) => write!(formatter, ""),
         }
-    }
-}
-
-impl From<String> for Slug2 {
-    fn from(from_string: String) -> Self {
-        Slug2::from(PathBuf::from(from_string))
     }
 }
 
@@ -100,9 +99,8 @@ pub fn get_slug(from: &Path) -> io::Result<Slug> {
 fn get_slug2(from: PathBuf) -> io::Result<PathBuf> {
     // get the last component
     let last = from.components().last();
-    let last = last.unwrap();
-    let last = last.as_os_str();
-    let last = last.to_string_lossy(); // FIXME error handling
+    // FIXME error handling
+    let last = last.unwrap().as_os_str().to_string_lossy();
     let mut to = PathBuf::from(slug(&last));
     if let Some(dir) = from.parent() {
         let mut dir = dir.to_path_buf();
@@ -111,6 +109,23 @@ fn get_slug2(from: PathBuf) -> io::Result<PathBuf> {
     }
 
     Ok(to)
+}
+
+pub fn slugger2<
+    P: Permissions,
+    M: Metadata<Permissions = P>,
+    F: GenFS<Permissions = P, Metadata = M>,
+>(
+    fs: &mut F,
+    args: &[String],
+) -> io::Result<()> {
+    let mut path_bufs: Vec<PathBuf> = args.iter().map(PathBuf::from).collect();
+    path_bufs.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
+    for path_buf in path_bufs {
+        let slug = Slug2::from(path_buf);
+        rename2(fs, slug)?;
+    }
+    Ok(())
 }
 
 pub fn slugger<
@@ -133,6 +148,37 @@ pub fn slugger<
 // pub fn slug_line<'a>(line: String<'a>) -> io::Result<Slug<'a>> {
 //     get_slug(&PathBuf::from(line))
 // }
+
+pub fn rename2<
+    P: Permissions,
+    M: Metadata<Permissions = P>,
+    F: GenFS<Permissions = P, Metadata = M>,
+>(
+    fs: &mut F,
+    slug: Slug2,
+) -> io::Result<()> {
+    match slug.to {
+        Ok(to_path_buf) => {
+            if to_path_buf == slug.from {
+                return Ok(());
+            }
+            if let Err(_err) = fs.metadata(&slug.from) {
+                return Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("Slug source file not found: {}", &slug.from.display()),
+                ));
+            }
+            if fs.metadata(&to_path_buf).is_ok() {
+                return Err(io::Error::new(
+                    io::ErrorKind::AlreadyExists,
+                    format!("Slug destination already exists: {}", to_path_buf.display()),
+                ));
+            }
+            fs.rename(&slug.from, &to_path_buf)
+        }
+        Err(err) => Err(io::Error::new(io::ErrorKind::Other, "Not implemented")),
+    }
+}
 
 pub fn rename<
     P: Permissions,
