@@ -1,6 +1,6 @@
-- rename &str converter function
-- make PathBuf converter function
-- get that CLI working
+- ✓ rename &str converter function
+- ✓ make PathBuf converter function
+- ✓ get that CLI working
 - make rename function that takes separate from and to
 - add --rename command line argument
 - add usage reporting
