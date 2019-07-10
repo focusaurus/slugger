@@ -47,11 +47,11 @@ impl fmt::Display for Slug2 {
 }
 */
 
-pub fn string_to_slug(from: String) -> io::Result<PathBuf> {
-    path_to_slug(PathBuf::from(from))
-}
-
-fn path_to_slug(from: PathBuf) -> io::Result<PathBuf> {
+pub fn to_slug<P>(from: P) -> io::Result<PathBuf>
+where
+    P: Into<PathBuf>,
+{
+    let from = from.into();
     // get the last component
     let last = from.components().last();
     // FIXME error handling
