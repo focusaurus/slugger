@@ -7,7 +7,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
 // use std::str::FromStr;
-
+/*
 #[derive(Debug)]
 pub struct Slug<'a> {
     pub from: &'a Path,
@@ -45,8 +45,13 @@ impl fmt::Display for Slug2 {
         }
     }
 }
+*/
 
-fn get_slug2(from: PathBuf) -> io::Result<PathBuf> {
+pub fn to_slug(from: String) -> io::Result<PathBuf> {
+    path_to_slug(PathBuf::from(from))
+}
+
+fn path_to_slug(from: PathBuf) -> io::Result<PathBuf> {
     // get the last component
     let last = from.components().last();
     // FIXME error handling
