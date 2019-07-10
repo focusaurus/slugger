@@ -37,7 +37,7 @@ fn main() {
     for result in stdin.lock().lines() {
         // println!("{}", slugger::slug_line(line));
         // let from_path_buf = PathBuf::from(result.unwrap());
-        let slug = slugger::to_slug(result.unwrap()).unwrap();
+        let slug = slugger::string_to_slug(result.unwrap()).unwrap();
         println!("{}", slug.display());
     }
 }

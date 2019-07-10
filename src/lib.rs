@@ -47,7 +47,7 @@ impl fmt::Display for Slug2 {
 }
 */
 
-pub fn to_slug(from: String) -> io::Result<PathBuf> {
+pub fn string_to_slug(from: String) -> io::Result<PathBuf> {
     path_to_slug(PathBuf::from(from))
 }
 
@@ -56,7 +56,7 @@ fn path_to_slug(from: PathBuf) -> io::Result<PathBuf> {
     let last = from.components().last();
     // FIXME error handling
     let last = last.unwrap().as_os_str().to_string_lossy();
-    let mut to = PathBuf::from(slug(&last));
+    let mut to = PathBuf::from(convert_slug(&last));
     if let Some(dir) = from.parent() {
         let mut dir = dir.to_path_buf();
         dir.push(to);
@@ -66,7 +66,7 @@ fn path_to_slug(from: PathBuf) -> io::Result<PathBuf> {
     Ok(to)
 }
 
-pub fn slug(input: &str) -> String {
+pub fn convert_slug(input: &str) -> String {
     let separator = '-';
     let input = input.trim();
     let input = input.to_lowercase();
