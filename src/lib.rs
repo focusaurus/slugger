@@ -156,28 +156,25 @@ pub fn rename2<
 >(
     fs: &mut F,
     slug: Slug2,
-) -> io::Result<()> {
-    match slug.to {
-        Ok(to_path_buf) => {
-            if to_path_buf == slug.from {
-                return Ok(());
-            }
-            if let Err(_err) = fs.metadata(&slug.from) {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("Slug source file not found: {}", &slug.from.display()),
-                ));
-            }
-            if fs.metadata(&to_path_buf).is_ok() {
-                return Err(io::Error::new(
-                    io::ErrorKind::AlreadyExists,
-                    format!("Slug destination already exists: {}", to_path_buf.display()),
-                ));
-            }
-            fs.rename(&slug.from, &to_path_buf)
-        }
-        Err(err) => Err(io::Error::new(io::ErrorKind::Other, "Not implemented")),
+) -> io::Result<Slug2> {
+    let to = slug.to?.clone();
+    if &to == &slug.from {
+        return Ok(slug);
     }
+    if let Err(_err) = fs.metadata(&slug.from) {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Slug source file not found: {}", &slug.from.display()),
+        ));
+    }
+    if fs.metadata(&to).is_ok() {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!("Slug destination already exists: {}", to.display()),
+        ));
+    }
+    fs.rename(&slug.from, to)?;
+    Ok(slug)
 }
 
 pub fn rename<
@@ -263,44 +260,50 @@ mod test {
     }
 
     #[test]
-    fn test_rename_base() {
+    fn test_rename_base() -> Result<(), io::Error> {
         let mut fs = rsfs::mem::FS::new();
         let from = PathBuf::from("/A");
-        let slug = get_slug(&from).unwrap();
-        fs.create_file(slug.from).unwrap();
-        rename(&mut fs, &slug).unwrap();
-        match fs.metadata(slug.to) {
-            Ok(metadata) => {
-                assert!(metadata.is_file());
-            }
-            Err(_) => {
-                panic!("to path should not have errors after rename");
-            }
-        }
-        match fs.metadata(slug.from) {
-            Ok(_) => {
-                panic!("from path should not exist after rename");
-            }
-            Err(io_error) => {
-                assert_eq!(io_error.kind(), io::ErrorKind::NotFound);
+        let slug = Slug2::from(from);
+        fs.create_file(slug.from.as_path())?;
+        let slug = rename2(&mut fs, slug)?;
+        match slug.to {
+            Err(_) => panic!("to path should not have errors after rename"),
+            Ok(to) => {
+                match fs.metadata(to.as_path()) {
+                    Ok(metadata) => {
+                        assert!(metadata.is_file());
+                    }
+                    Err(_) => {
+                        panic!("to path should exist after rename");
+                    }
+                }
+                match fs.metadata(slug.from) {
+                    Ok(_) => {
+                        panic!("from path should not exist after rename");
+                    }
+                    Err(io_error) => {
+                        assert_eq!(io_error.kind(), io::ErrorKind::NotFound);
+                        Ok(())
+                    }
+                }
             }
         }
     }
 
     #[test]
-    fn test_rename_no_clobber() {
+    fn test_rename_no_clobber() -> Result<(), io::Error> {
         let mut fs = rsfs::mem::FS::new();
         let from = PathBuf::from("/A");
-        let slug = get_slug(&from).unwrap();
-        fs.create_file(&slug.from).unwrap();
-        fs.create_file(&slug.to).unwrap();
-        let result = rename(&mut fs, &slug);
-        match result {
-            Ok(_) => {
-                panic!("rename should not succeed if destination already exists");
-            }
+        let slug = Slug2::from(from);
+        fs.create_file(&slug.from)?;
+        // TODO would like to know why I can't do this
+        // fs.create_file(&slug.to?)?;
+        fs.create_file(PathBuf::from("/a"))?;
+        match rename2(&mut fs, slug) {
+            Ok(_) => panic!("rename should not succeed if destination already exists"),
             Err(io_error) => {
                 assert_eq!(io_error.kind(), std::io::ErrorKind::AlreadyExists);
+                Ok(())
             }
         }
     }
@@ -309,30 +312,32 @@ mod test {
     fn test_rename_no_op() {
         let mut fs = rsfs::mem::FS::new();
         let from = PathBuf::from("/a");
-        let slug = get_slug(&from).unwrap();
+        let slug = Slug2::from(from);
         fs.create_file(&slug.from).unwrap();
-        if let Err(_) = rename(&mut fs, &slug) {
+        if let Err(_) = rename2(&mut fs, slug) {
             panic!("should not error if existing file is already a slug");
         }
     }
 
     #[test]
-    fn test_nested_file() {
+    fn test_nested_file() -> Result<(), io::Error> {
         let mut fs = rsfs::mem::FS::new();
         let mut from = PathBuf::from("/Dir1");
-        fs.create_dir(&from).unwrap();
+        fs.create_dir(&from)?;
         from.push("Dir Two");
-        fs.create_dir(&from).unwrap();
+        fs.create_dir(&from)?;
         from.push("file one");
-        fs.create_file(&from).unwrap();
-        let slug = get_slug(&from).unwrap();
-        assert_eq!(slug.to, PathBuf::from("/Dir1/Dir Two/file-one"));
-        rename(&mut fs, &slug).unwrap();
-        fs.metadata(&slug.to).expect("to path should exist");
+        fs.create_file(&from)?;
+        let slug = Slug2::from(from);
+        let slug = rename2(&mut fs, slug)?;
+        let to_clone = slug.to?.clone();
+        assert_eq!(to_clone, PathBuf::from("/Dir1/Dir Two/file-one"));
+        fs.metadata(&to_clone).expect("to path should exist");
         assert!(
             fs.metadata(&slug.from).is_err(),
             "from path should not exist"
         );
+        Ok(())
     }
 
     #[test]
