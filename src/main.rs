@@ -4,7 +4,7 @@ use rsfs::{GenFS, Metadata, Permissions};
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::{env, io};
-
+/*
 fn slugger_main<
     P: Permissions,
     M: Metadata<Permissions = P>,
@@ -30,6 +30,7 @@ fn main1() {
         std::process::exit(10);
     }
 }
+*/
 
 fn main() {
     let stdin = io::stdin();

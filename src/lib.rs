@@ -46,17 +46,19 @@ impl fmt::Display for Slug2 {
     }
 }
 
-fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Ordering {
-    // deepest first
-    path_a
-        .components()
-        .count()
-        .cmp(&path_b.components().count())
-        .reverse()
-        // directories first (rust considers true>false)
-        .then(path_a.is_dir().cmp(&path_b.is_dir()).reverse())
-        // then files sorted by name
-        .then(path_a.cmp(&path_b))
+fn get_slug2(from: PathBuf) -> io::Result<PathBuf> {
+    // get the last component
+    let last = from.components().last();
+    // FIXME error handling
+    let last = last.unwrap().as_os_str().to_string_lossy();
+    let mut to = PathBuf::from(slug(&last));
+    if let Some(dir) = from.parent() {
+        let mut dir = dir.to_path_buf();
+        dir.push(to);
+        to = dir;
+    }
+
+    Ok(to)
 }
 
 pub fn slug(input: &str) -> String {
@@ -79,6 +81,22 @@ pub fn slug(input: &str) -> String {
     slug
 }
 
+/*
+fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Ordering {
+    // deepest first
+    path_a
+        .components()
+        .count()
+        .cmp(&path_b.components().count())
+        .reverse()
+        // directories first (rust considers true>false)
+        .then(path_a.is_dir().cmp(&path_b.is_dir()).reverse())
+        // then files sorted by name
+        .then(path_a.cmp(&path_b))
+}
+
+
+
 pub fn get_slug(from: &Path) -> io::Result<Slug> {
     // get the last component
     let last = from.components().last();
@@ -96,20 +114,7 @@ pub fn get_slug(from: &Path) -> io::Result<Slug> {
     Ok(slug)
 }
 
-fn get_slug2(from: PathBuf) -> io::Result<PathBuf> {
-    // get the last component
-    let last = from.components().last();
-    // FIXME error handling
-    let last = last.unwrap().as_os_str().to_string_lossy();
-    let mut to = PathBuf::from(slug(&last));
-    if let Some(dir) = from.parent() {
-        let mut dir = dir.to_path_buf();
-        dir.push(to);
-        to = dir;
-    }
 
-    Ok(to)
-}
 
 pub fn slugger2<
     P: Permissions,
@@ -371,3 +376,4 @@ mod test {
         assert!(description.contains("/from not found"));
     }
 }
+*/
