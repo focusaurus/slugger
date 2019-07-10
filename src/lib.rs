@@ -86,6 +86,31 @@ pub fn convert_slug(input: &str) -> String {
     slug
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::error::Error;
+    use std::path::PathBuf;
+    #[test]
+    fn test_convert_slug() {
+        assert_eq!(convert_slug("A"), "a", "uppercase to lowercase");
+        assert_eq!(convert_slug("Z"), "z", "uppercase to lowercase");
+        assert_eq!(convert_slug("a b"), "a-b", "whitespace to dash");
+        assert_eq!(convert_slug("a\nb"), "a-b", "whitespace to dash");
+        assert_eq!(convert_slug("a\tb"), "a-b", "whitespace to dash");
+        assert_eq!(convert_slug(" a"), "a", "trim whitespace");
+        assert_eq!(convert_slug("a "), "a", "trim whitespace");
+        assert_eq!(convert_slug("\ta\t"), "a", "trim whitespace");
+        assert_eq!(convert_slug("Á"), "a", "transliterate");
+        assert_eq!(convert_slug("a-b"), "a-b", "preserve dashes");
+        assert_eq!(convert_slug("a-"), "a", "trim dashes");
+        assert_eq!(convert_slug("-a"), "a", "trim dashes");
+        assert_eq!(convert_slug("-a-"), "a", "trim dashes");
+        assert_eq!(convert_slug("--a"), "a", "trim dashes");
+        assert_eq!(convert_slug("a--"), "a", "trim dashes");
+        assert_eq!(convert_slug("foo.txt"), "foo.txt", "preserve periods");
+    }
+}
 /*
 fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Ordering {
     // deepest first
@@ -249,25 +274,7 @@ mod test {
         );
     }
 
-    #[test]
-    fn test_slug() {
-        assert_eq!(slug("A"), "a", "uppercase to lowercase");
-        assert_eq!(slug("Z"), "z", "uppercase to lowercase");
-        assert_eq!(slug("a b"), "a-b", "whitespace to dash");
-        assert_eq!(slug("a\nb"), "a-b", "whitespace to dash");
-        assert_eq!(slug("a\tb"), "a-b", "whitespace to dash");
-        assert_eq!(slug(" a"), "a", "trim whitespace");
-        assert_eq!(slug("a "), "a", "trim whitespace");
-        assert_eq!(slug("\ta\t"), "a", "trim whitespace");
-        assert_eq!(slug("Á"), "a", "transliterate");
-        assert_eq!(slug("a-b"), "a-b", "preserve dashes");
-        assert_eq!(slug("a-"), "a", "trim dashes");
-        assert_eq!(slug("-a"), "a", "trim dashes");
-        assert_eq!(slug("-a-"), "a", "trim dashes");
-        assert_eq!(slug("--a"), "a", "trim dashes");
-        assert_eq!(slug("a--"), "a", "trim dashes");
-        assert_eq!(slug("foo.txt"), "foo.txt", "preserve periods");
-    }
+
 
     #[test]
     fn test_rename_base() -> Result<(), io::Error> {

@@ -41,7 +41,7 @@ fn main() {
         println!("{}", slug.display());
     }
 }
-
+/*
 #[cfg(test)]
 mod test {
     use super::*;
@@ -56,3 +56,4 @@ mod test {
         }
     }
 }
+*/
