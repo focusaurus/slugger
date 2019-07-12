@@ -1,10 +1,8 @@
 extern crate rsfs;
 extern crate unidecode;
 use rsfs::{GenFS, Metadata, Permissions};
-use std::cmp::Ordering;
-use std::fmt;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use unidecode::unidecode;
 
 /// Sluggify a raw string.
@@ -56,34 +54,32 @@ where
     Ok(to)
 }
 
-
-/*
 pub fn rename<
     P: Permissions,
     M: Metadata<Permissions = P>,
     F: GenFS<Permissions = P, Metadata = M>,
 >(
     fs: &mut F,
-    slug: &Slug,
+    from: PathBuf,
+    to: PathBuf,
 ) -> io::Result<()> {
-    if slug.to == slug.from {
+    if to == from {
         return Ok(());
     }
-    if let Err(_err) = fs.metadata(&slug.from) {
+    if let Err(_err) = fs.metadata(&from) {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
-            format!("Slug source file not found: {}", &slug.from.display()),
+            format!("Slug source file not found: {}", &from.display()),
         ));
     }
-    if fs.metadata(&slug.to).is_ok() {
+    if fs.metadata(&to).is_ok() {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
-            format!("Slug destination already exists: {}", &slug.to.display()),
+            format!("Slug destination already exists: {}", &to.display()),
         ));
     }
-    fs.rename(&slug.from, &slug.to)
+    fs.rename(&from, &to)
 }
-*/
 
 #[cfg(test)]
 mod test {
