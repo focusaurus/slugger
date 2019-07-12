@@ -11,7 +11,7 @@ fn slugger_main<
     fs: &mut F,
     args: &[String],
 ) -> io::Result<()> {
-    if args.len() < 1 {
+    if args.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::Other,
             "Usage: slugger <path1> [path2] [...path3]",
