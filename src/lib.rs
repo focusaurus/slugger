@@ -105,56 +105,17 @@ mod test {
         assert_eq!(convert_str("a--"), "a", "trim dashes");
         assert_eq!(convert_str("foo.txt"), "foo.txt", "preserve periods");
     }
-}
-/*
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use std::error::Error;
-    use std::path::PathBuf;
-
-    #[test]
-    fn sort_by_name() {
-        let p1 = PathBuf::from("a");
-        let p2 = PathBuf::from("b");
-        assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
-    }
-
-    #[test]
-    fn sort_by_depth() {
-        let p1 = PathBuf::from("b/b");
-        let p2 = PathBuf::from("a");
-        assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
-    }
-
-    #[test]
-    fn sort_directories_first() {
-        let src_dir = PathBuf::from(file!());
-        let src_dir = src_dir.parent().unwrap();
-        let src_path = PathBuf::from("s"); // earlier same name but file not dir
-        println!("true.cmp(false) {:?}", true.cmp(&false));
-        println!("src_dir components {:?}", src_dir.components().count());
-        println!("src_dir is_dir {:?}", src_dir.is_dir());
-        println!("src_path components {:?}", src_path.components().count());
-        println!("src_path is_dir {:?}", src_path.is_dir());
-        assert_eq!(
-            sort_depth_then_directories(&src_dir, &src_path),
-            Ordering::Less
-        );
-    }
 
     #[test]
     fn test_rename_base() -> Result<(), io::Error> {
         let mut fs = rsfs::mem::FS::new();
         let from = PathBuf::from("/A");
-        let slug = Slug2::from(from);
-        fs.create_file(slug.from.as_path())?;
-        let slug = rename2(&mut fs, slug)?;
-        match slug.to {
-            Err(_) => panic!("to path should not have errors after rename"),
-            Ok(to) => {
-                match fs.metadata(to.as_path()) {
+        let to = convert_path(&from)?;
+        fs.create_file(from.as_path())?;
+        match rename(&mut fs, &from, &to) {
+            Err(_) => panic!("base rename should Ok"),
+            Ok(_) => {
+                match fs.metadata(&to) {
                     Ok(metadata) => {
                         assert!(metadata.is_file());
                     }
@@ -162,7 +123,7 @@ mod test {
                         panic!("to path should exist after rename");
                     }
                 }
-                match fs.metadata(slug.from) {
+                match fs.metadata(&from) {
                     Ok(_) => {
                         panic!("from path should not exist after rename");
                     }
@@ -179,12 +140,12 @@ mod test {
     fn test_rename_no_clobber() -> Result<(), io::Error> {
         let mut fs = rsfs::mem::FS::new();
         let from = PathBuf::from("/A");
-        let slug = Slug2::from(from);
-        fs.create_file(&slug.from)?;
+        let to = convert_path(&from)?;
+        fs.create_file(&from)?;
         // TODO would like to know why I can't do this
-        // fs.create_file(&slug.to?)?;
-        fs.create_file(PathBuf::from("/a"))?;
-        match rename2(&mut fs, slug) {
+        fs.create_file(&to)?;
+        // fs.create_file(PathBuf::from("/a"))?;
+        match rename(&mut fs, &from, &to) {
             Ok(_) => panic!("rename should not succeed if destination already exists"),
             Err(io_error) => {
                 assert_eq!(io_error.kind(), std::io::ErrorKind::AlreadyExists);
@@ -194,15 +155,48 @@ mod test {
     }
 
     #[test]
-    fn test_rename_no_op() {
+    fn test_rename_no_op() -> Result<(), io::Error> {
         let mut fs = rsfs::mem::FS::new();
         let from = PathBuf::from("/a");
-        let slug = Slug2::from(from);
-        fs.create_file(&slug.from).unwrap();
-        if let Err(_) = rename2(&mut fs, slug) {
-            panic!("should not error if existing file is already a slug");
-        }
+        let to = convert_path(&from)?;
+        fs.create_file(&from)?;
+        rename(&mut fs, &from, &to)
     }
+}
+
+/*
+        #[test]
+        fn sort_by_name() {
+            let p1 = PathBuf::from("a");
+            let p2 = PathBuf::from("b");
+            assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
+        }
+
+        #[test]
+        fn sort_by_depth() {
+            let p1 = PathBuf::from("b/b");
+            let p2 = PathBuf::from("a");
+            assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
+        }
+
+        #[test]
+        fn sort_directories_first() {
+            let src_dir = PathBuf::from(file!());
+            let src_dir = src_dir.parent().unwrap();
+            let src_path = PathBuf::from("s"); // earlier same name but file not dir
+            println!("true.cmp(false) {:?}", true.cmp(&false));
+            println!("src_dir components {:?}", src_dir.components().count());
+            println!("src_dir is_dir {:?}", src_dir.is_dir());
+            println!("src_path components {:?}", src_path.components().count());
+            println!("src_path is_dir {:?}", src_path.is_dir());
+            assert_eq!(
+                sort_depth_then_directories(&src_dir, &src_path),
+                Ordering::Less
+            );
+        }
+
+
+
 
     #[test]
     fn test_nested_file() -> Result<(), io::Error> {
@@ -255,5 +249,4 @@ mod test {
         assert!(description.starts_with("Slug source file not found"));
         assert!(description.contains("/from not found"));
     }
-}
 */
