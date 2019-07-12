@@ -6,6 +6,46 @@ use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
+// use std::str::FromStr;
+/*
+#[derive(Debug)]
+pub struct Slug<'a> {
+    pub from: &'a Path,
+    pub to: PathBuf,
+}
+
+#[derive(Debug)]
+pub struct Slug2 {
+    pub from: PathBuf,
+    pub to: io::Result<PathBuf>,
+}
+
+impl From<PathBuf> for Slug2 {
+    fn from(from_path_buf: PathBuf) -> Self {
+        let to = get_slug2(from_path_buf.clone());
+        Slug2 {
+            from: from_path_buf,
+            to: to,
+        }
+    }
+}
+
+impl From<String> for Slug2 {
+    fn from(from_string: String) -> Self {
+        Slug2::from(PathBuf::from(from_string))
+    }
+}
+
+impl fmt::Display for Slug2 {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        match self.to {
+            // TODO error handling for to_string_lossy
+            Ok(ref to) => write!(formatter, "{}", to.to_string_lossy()),
+            Err(_) => write!(formatter, ""),
+        }
+    }
+}
+*/
 
 pub fn convert_path<P>(from: P) -> io::Result<PathBuf>
 where
@@ -72,6 +112,131 @@ mod test {
     }
 }
 /*
+fn sort_depth_then_directories<'a>(path_a: &'a Path, path_b: &'a Path) -> Ordering {
+    // deepest first
+    path_a
+        .components()
+        .count()
+        .cmp(&path_b.components().count())
+        .reverse()
+        // directories first (rust considers true>false)
+        .then(path_a.is_dir().cmp(&path_b.is_dir()).reverse())
+        // then files sorted by name
+        .then(path_a.cmp(&path_b))
+}
+
+
+
+pub fn get_slug(from: &Path) -> io::Result<Slug> {
+    // get the last component
+    let last = from.components().last();
+    let last = last.unwrap();
+    let last = last.as_os_str();
+    let last = last.to_string_lossy(); // FIXME error handling
+    let mut to = PathBuf::from(slug(&last));
+    if let Some(dir) = from.parent() {
+        let mut dir = dir.to_path_buf();
+        dir.push(to);
+        to = dir;
+    }
+
+    let slug = Slug { from, to };
+    Ok(slug)
+}
+
+
+
+pub fn slugger2<
+    P: Permissions,
+    M: Metadata<Permissions = P>,
+    F: GenFS<Permissions = P, Metadata = M>,
+>(
+    fs: &mut F,
+    args: &[String],
+) -> io::Result<()> {
+    let mut path_bufs: Vec<PathBuf> = args.iter().map(PathBuf::from).collect();
+    path_bufs.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
+    for path_buf in path_bufs {
+        let slug = Slug2::from(path_buf);
+        rename2(fs, slug)?;
+    }
+    Ok(())
+}
+
+pub fn slugger<
+    P: Permissions,
+    M: Metadata<Permissions = P>,
+    F: GenFS<Permissions = P, Metadata = M>,
+>(
+    fs: &mut F,
+    args: &[String],
+) -> io::Result<()> {
+    let mut paths: Vec<PathBuf> = args.iter().map(PathBuf::from).collect();
+    paths.sort_by(|path_a, path_b| sort_depth_then_directories(&path_a, &path_b));
+    for path in &paths {
+        let slug = get_slug(&path)?;
+        rename(fs, &slug)?;
+    }
+    Ok(())
+}
+
+// pub fn slug_line<'a>(line: String<'a>) -> io::Result<Slug<'a>> {
+//     get_slug(&PathBuf::from(line))
+// }
+
+pub fn rename2<
+    P: Permissions,
+    M: Metadata<Permissions = P>,
+    F: GenFS<Permissions = P, Metadata = M>,
+>(
+    fs: &mut F,
+    slug: Slug2,
+) -> io::Result<Slug2> {
+    let to = slug.to?.clone();
+    if &to == &slug.from {
+        return Ok(slug);
+    }
+    if let Err(_err) = fs.metadata(&slug.from) {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Slug source file not found: {}", &slug.from.display()),
+        ));
+    }
+    if fs.metadata(&to).is_ok() {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!("Slug destination already exists: {}", to.display()),
+        ));
+    }
+    fs.rename(&slug.from, to)?;
+    Ok(slug)
+}
+
+pub fn rename<
+    P: Permissions,
+    M: Metadata<Permissions = P>,
+    F: GenFS<Permissions = P, Metadata = M>,
+>(
+    fs: &mut F,
+    slug: &Slug,
+) -> io::Result<()> {
+    if slug.to == slug.from {
+        return Ok(());
+    }
+    if let Err(_err) = fs.metadata(&slug.from) {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Slug source file not found: {}", &slug.from.display()),
+        ));
+    }
+    if fs.metadata(&slug.to).is_ok() {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!("Slug destination already exists: {}", &slug.to.display()),
+        ));
+    }
+    fs.rename(&slug.from, &slug.to)
+}
 
 #[cfg(test)]
 mod test {
@@ -108,6 +273,8 @@ mod test {
             Ordering::Less
         );
     }
+
+
 
     #[test]
     fn test_rename_base() -> Result<(), io::Error> {

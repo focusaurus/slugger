@@ -42,7 +42,8 @@ fn main() {
 fn slugger_main() -> io::Result<()> {
     let stdin = io::stdin();
     for result in stdin.lock().lines() {
-        let slug = slugger::to_slug(result?)?;
+        let line = result?;
+        let slug = slugger::convert_path(line)?;
         println!("{}", slug.display());
     }
     Ok(())
