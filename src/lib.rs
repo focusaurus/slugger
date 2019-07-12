@@ -7,25 +7,16 @@ use std::io;
 use std::path::{Path, PathBuf};
 use unidecode::unidecode;
 
-pub fn convert_path<P>(from: P) -> io::Result<PathBuf>
-where
-    P: Into<PathBuf>,
-{
-    let from = from.into();
-    // get the last component
-    let last = from.components().last();
-    // FIXME error handling
-    let last = last.unwrap().as_os_str().to_string_lossy();
-    let mut to = PathBuf::from(convert_str(&last));
-    if let Some(dir) = from.parent() {
-        let mut dir = dir.to_path_buf();
-        dir.push(to);
-        to = dir;
-    }
-
-    Ok(to)
-}
-
+/// Sluggify a raw string.
+///
+/// This is the base implementation of the slug conversion rules.
+/// Manipulation of paths is built upon this.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(slugger::convert_str("a b"), "a-b", "whitespace to dash");
+/// ```
 pub fn convert_str(input: &str) -> String {
     let separator = '-';
     let input = input.trim();
@@ -45,6 +36,54 @@ pub fn convert_str(input: &str) -> String {
     }
     slug
 }
+
+pub fn convert_path<P>(from: P) -> io::Result<PathBuf>
+where
+    P: Into<PathBuf>,
+{
+    let from = from.into();
+    // get the last component
+    let last = from.components().last();
+    // FIXME error handling
+    let last = last.unwrap().as_os_str().to_string_lossy();
+    let mut to = PathBuf::from(convert_str(&last));
+    if let Some(dir) = from.parent() {
+        let mut dir = dir.to_path_buf();
+        dir.push(to);
+        to = dir;
+    }
+
+    Ok(to)
+}
+
+
+/*
+pub fn rename<
+    P: Permissions,
+    M: Metadata<Permissions = P>,
+    F: GenFS<Permissions = P, Metadata = M>,
+>(
+    fs: &mut F,
+    slug: &Slug,
+) -> io::Result<()> {
+    if slug.to == slug.from {
+        return Ok(());
+    }
+    if let Err(_err) = fs.metadata(&slug.from) {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Slug source file not found: {}", &slug.from.display()),
+        ));
+    }
+    if fs.metadata(&slug.to).is_ok() {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!("Slug destination already exists: {}", &slug.to.display()),
+        ));
+    }
+    fs.rename(&slug.from, &slug.to)
+}
+*/
 
 #[cfg(test)]
 mod test {
