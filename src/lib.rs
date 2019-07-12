@@ -2,7 +2,7 @@ extern crate rsfs;
 extern crate unidecode;
 use rsfs::{GenFS, Metadata, Permissions};
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use unidecode::unidecode;
 
 /// Sluggify a raw string.
@@ -35,11 +35,11 @@ pub fn convert_str(input: &str) -> String {
     slug
 }
 
-pub fn convert_path<P>(from: P) -> io::Result<PathBuf>
-where
-    P: Into<PathBuf>,
+pub fn convert_path(from: &Path) -> io::Result<PathBuf>
+// where
+//     P: Into<PathBuf>,
 {
-    let from = from.into();
+    // let from :PathBuf = from.into();
     // get the last component
     let last = from.components().last();
     // FIXME error handling
@@ -60,8 +60,8 @@ pub fn rename<
     F: GenFS<Permissions = P, Metadata = M>,
 >(
     fs: &mut F,
-    from: PathBuf,
-    to: PathBuf,
+    from: &Path,
+    to: &Path,
 ) -> io::Result<()> {
     if to == from {
         return Ok(());

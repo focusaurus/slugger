@@ -2,7 +2,9 @@ extern crate rsfs;
 extern crate slugger;
 use rsfs::{GenFS, Metadata, Permissions};
 use std::io::prelude::*;
+use std::path::PathBuf;
 use std::{env, io};
+
 /*
 fn slugger_main<
     P: Permissions,
@@ -45,13 +47,13 @@ fn slugger_main() -> io::Result<()> {
     }
     let stdin = io::stdin();
     for result in stdin.lock().lines() {
-        let line = result?;
+        let from = PathBuf::from(result?);
+        let to = slugger::convert_path(&from)?;
         if rename {
-            println!("rename!");
-        } else {
-            let slug = slugger::convert_path(line)?;
-            println!("{}", slug.display());
+            let mut fs = rsfs::disk::FS;
+            slugger::rename(&mut fs, &from, &to)?;
         }
+        println!("{}", to.display());
     }
     Ok(())
 }
