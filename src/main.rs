@@ -2,6 +2,7 @@ extern crate rsfs;
 extern crate slugger;
 extern crate structopt;
 use rsfs::{GenFS, Metadata, Permissions};
+use std::ffi::OsString;
 use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
@@ -35,25 +36,20 @@ fn slugger_main<
     slugger::slugger(fs, &args)
 }
 
-fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
-    let mut fs = rsfs::disk::FS;
-    if let Err(message) = slugger_main(&mut fs, &args) {
-        eprintln!("{}", message);
-        std::process::exit(10);
-    }
-}
 */
 
 fn main() {
-    if let Err(message) = slugger_main() {
+    if let Err(message) = slugger_main(None) {
         eprintln!("{}", message);
         std::process::exit(10);
     }
 }
 
-fn slugger_main() -> io::Result<()> {
-    let opt = Opt::from_args();
+fn slugger_main(override_args: Option<Vec<OsString>>) -> io::Result<()> {
+    let opt = match override_args {
+        Some(args) => Opt::from_iter(args.iter()),
+        None => Opt::from_args(),
+    };
     let stdin = io::stdin();
     for result in stdin.lock().lines() {
         let from = PathBuf::from(result?);
@@ -72,7 +68,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn slugger_zero_args_error() {
+    fn slugger_help() {
         use std::error::Error;
         let mut fs = rsfs::mem::FS::new();
         match slugger_main(&mut fs, &vec![]) {
