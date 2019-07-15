@@ -1,8 +1,23 @@
 extern crate rsfs;
 extern crate slugger;
+extern crate structopt;
 use rsfs::{GenFS, Metadata, Permissions};
-use std::{env, io};
+use std::io;
+use std::io::prelude::*;
+use std::path::PathBuf;
+use structopt::StructOpt;
 
+/// Transform filenames to eliminate special characters. Optionally rename.
+#[derive(StructOpt, Debug)]
+#[structopt(name = "slugger")]
+struct Opt {
+    /// Actually perform renames on the filesystem.
+    /// By default will print slugs to stdout but not access the filesystem.
+    #[structopt(short = "r", long = "rename")]
+    rename: bool,
+}
+
+/*
 fn slugger_main<
     P: Permissions,
     M: Metadata<Permissions = P>,
@@ -28,7 +43,30 @@ fn main() {
         std::process::exit(10);
     }
 }
+*/
 
+fn main() {
+    if let Err(message) = slugger_main() {
+        eprintln!("{}", message);
+        std::process::exit(10);
+    }
+}
+
+fn slugger_main() -> io::Result<()> {
+    let opt = Opt::from_args();
+    let stdin = io::stdin();
+    for result in stdin.lock().lines() {
+        let from = PathBuf::from(result?);
+        let to = slugger::convert_path(&from)?;
+        if opt.rename {
+            let mut fs = rsfs::disk::FS;
+            slugger::rename(&mut fs, &from, &to)?;
+        }
+        println!("{}", to.display());
+    }
+    Ok(())
+}
+/*
 #[cfg(test)]
 mod test {
     use super::*;
@@ -43,3 +81,4 @@ mod test {
         }
     }
 }
+*/
