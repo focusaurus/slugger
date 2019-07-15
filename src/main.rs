@@ -1,9 +1,21 @@
 extern crate rsfs;
 extern crate slugger;
+extern crate structopt;
 use rsfs::{GenFS, Metadata, Permissions};
+use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
-use std::{env, io};
+use structopt::StructOpt;
+
+/// Transform filenames to eliminate special characters. Optionally rename.
+#[derive(StructOpt, Debug)]
+#[structopt(name = "slugger")]
+struct Opt {
+    /// Actually perform renames on the filesystem.
+    /// By default will print slugs to stdout but not access the filesystem.
+    #[structopt(short = "r", long = "rename")]
+    rename: bool,
+}
 
 /*
 fn slugger_main<
@@ -41,15 +53,12 @@ fn main() {
 }
 
 fn slugger_main() -> io::Result<()> {
-    let mut rename = false;
-    if let Some(arg) = env::args().nth(1) {
-        rename = arg == "--rename";
-    }
+    let opt = Opt::from_args();
     let stdin = io::stdin();
     for result in stdin.lock().lines() {
         let from = PathBuf::from(result?);
         let to = slugger::convert_path(&from)?;
-        if rename {
+        if opt.rename {
             let mut fs = rsfs::disk::FS;
             slugger::rename(&mut fs, &from, &to)?;
         }

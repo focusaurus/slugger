@@ -6,3 +6,4 @@ authors = ["Peter Lyons <pete@peterlyons.com>"]
 [dependencies]
 rsfs = "0.4.1"    # A generic filesystem with disk and in-memory implementations.
 unidecode = "0.3.0"
+structopt = "0.2.18"

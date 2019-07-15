@@ -3,6 +3,7 @@
 - ✓ get that CLI working
 - ✓ make rename function that takes separate from and to
 - ✓ add --rename command line argument
-- add usage reporting
+- ✓ add usage reporting
 - Try a ToSlug trait with to_slug function mirroring ToString
-- implement for String and PathBuf
+  - implement for String and PathBuf
+- add CLI test with fake stdin iterator
