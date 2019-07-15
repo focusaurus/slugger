@@ -174,78 +174,23 @@ mod test {
         fs.create_file(&from)?;
         let to = convert_path(&from)?;
         rename(&mut fs, &from, &to)?;
-        // let to_clone = slug.to?.clone();
         fs.metadata(&to).expect("to path should exist");
         assert_eq!(to, PathBuf::from("/Dir1/Dir Two/file-one"));
         assert!(fs.metadata(&from).is_err(), "from path should not exist");
         Ok(())
     }
 
-}
-
-/*
-        #[test]
-        fn sort_by_name() {
-            let p1 = PathBuf::from("a");
-            let p2 = PathBuf::from("b");
-            assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
-        }
-
-        #[test]
-        fn sort_by_depth() {
-            let p1 = PathBuf::from("b/b");
-            let p2 = PathBuf::from("a");
-            assert_eq!(sort_depth_then_directories(&p1, &p2), Ordering::Less);
-        }
-
-        #[test]
-        fn sort_directories_first() {
-            let src_dir = PathBuf::from(file!());
-            let src_dir = src_dir.parent().unwrap();
-            let src_path = PathBuf::from("s"); // earlier same name but file not dir
-            println!("true.cmp(false) {:?}", true.cmp(&false));
-            println!("src_dir components {:?}", src_dir.components().count());
-            println!("src_dir is_dir {:?}", src_dir.is_dir());
-            println!("src_path components {:?}", src_path.components().count());
-            println!("src_path is_dir {:?}", src_path.is_dir());
-            assert_eq!(
-                sort_depth_then_directories(&src_dir, &src_path),
-                Ordering::Less
-            );
-        }
-
-
-
-
-
     #[test]
-    fn test_slugger_depth_first() {
+    fn test_slugger_from_not_found() -> Result<(), io::Error> {
+        let from = PathBuf::from("/from not found");
+        let to = convert_path(&from)?;
         let mut fs = rsfs::mem::FS::new();
-        fs.create_dir("/dir a").unwrap();
-        fs.create_file("/dir a/file 1").unwrap();
-        fs.create_file("/dir a/file 2").unwrap();
-        let paths: Vec<String> = vec![
-            "/dir a".into(),
-            "/dir a/file 1".into(),
-            "/dir a/file 2".into(),
-        ];
-        // Ensure the deep files get renamed before their containing directory
-        slugger(&mut fs, &paths).unwrap();
-        fs.metadata("/dir-a").unwrap();
-        fs.metadata("/dir-a/file-1").unwrap();
-        fs.metadata("/dir-a/file-2").unwrap();
-    }
-
-    #[test]
-    fn test_slugger_from_not_found() {
-        let mut fs = rsfs::mem::FS::new();
-        let paths: Vec<String> = vec!["/from not found".into()];
-        // Ensure the deep files get renamed before their containing directory
-        let result = slugger(&mut fs, &paths);
+        let result = rename(&mut fs, &from, &to);
         assert!(result.is_err());
         let err = result.err().unwrap();
         let description = err.description();
         assert!(description.starts_with("Slug source file not found"));
         assert!(description.contains("/from not found"));
+        Ok(())
     }
-*/
+}
