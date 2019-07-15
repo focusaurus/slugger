@@ -162,6 +162,25 @@ mod test {
         fs.create_file(&from)?;
         rename(&mut fs, &from, &to)
     }
+
+    #[test]
+    fn test_nested_file() -> Result<(), io::Error> {
+        let mut fs = rsfs::mem::FS::new();
+        let mut from = PathBuf::from("/Dir1");
+        fs.create_dir(&from)?;
+        from.push("Dir Two");
+        fs.create_dir(&from)?;
+        from.push("file one");
+        fs.create_file(&from)?;
+        let to = convert_path(&from)?;
+        rename(&mut fs, &from, &to)?;
+        // let to_clone = slug.to?.clone();
+        fs.metadata(&to).expect("to path should exist");
+        assert_eq!(to, PathBuf::from("/Dir1/Dir Two/file-one"));
+        assert!(fs.metadata(&from).is_err(), "from path should not exist");
+        Ok(())
+    }
+
 }
 
 /*
@@ -198,26 +217,6 @@ mod test {
 
 
 
-    #[test]
-    fn test_nested_file() -> Result<(), io::Error> {
-        let mut fs = rsfs::mem::FS::new();
-        let mut from = PathBuf::from("/Dir1");
-        fs.create_dir(&from)?;
-        from.push("Dir Two");
-        fs.create_dir(&from)?;
-        from.push("file one");
-        fs.create_file(&from)?;
-        let slug = Slug2::from(from);
-        let slug = rename2(&mut fs, slug)?;
-        let to_clone = slug.to?.clone();
-        assert_eq!(to_clone, PathBuf::from("/Dir1/Dir Two/file-one"));
-        fs.metadata(&to_clone).expect("to path should exist");
-        assert!(
-            fs.metadata(&slug.from).is_err(),
-            "from path should not exist"
-        );
-        Ok(())
-    }
 
     #[test]
     fn test_slugger_depth_first() {
