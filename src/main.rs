@@ -3,10 +3,8 @@ extern crate slugger;
 extern crate structopt;
 use rsfs::{GenFS, Metadata, Permissions};
 use std::env;
-use std::ffi::OsString;
 use std::io;
 use std::io::prelude::*;
-use std::io::BufReader;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -70,7 +68,6 @@ mod test {
 
     #[test]
     fn slugger_help() {
-        use std::error::Error;
         use std::io;
         assert!(slugger_main(vec!["--help".into()], io::empty()).is_ok());
     }
