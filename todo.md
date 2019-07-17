@@ -7,3 +7,5 @@
 - Try a ToSlug trait with to_slug function mirroring ToString
   - implement for String and PathBuf
 - add CLI test with fake stdin iterator
+- consider https://github.com/rust-cli/paw for command line arg parsing and printing
+  - Need custom error type for printing error messages
