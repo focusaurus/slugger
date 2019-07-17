@@ -2,9 +2,11 @@ extern crate rsfs;
 extern crate slugger;
 extern crate structopt;
 use rsfs::{GenFS, Metadata, Permissions};
+use std::env;
 use std::ffi::OsString;
 use std::io;
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -39,19 +41,18 @@ fn slugger_main<
 */
 
 fn main() {
-    if let Err(message) = slugger_main(None) {
+    if let Err(message) = slugger_main(env::args(), io::stdin().lock()) {
         eprintln!("{}", message);
         std::process::exit(10);
     }
 }
 
-fn slugger_main(override_args: Option<Vec<OsString>>) -> io::Result<()> {
-    let opt = match override_args {
-        Some(args) => Opt::from_iter(args.iter()),
-        None => Opt::from_args(),
-    };
-    let stdin = io::stdin();
-    for result in stdin.lock().lines() {
+fn slugger_main<I>(args: I, input: impl BufRead) -> io::Result<()>
+where
+    I: IntoIterator<Item = String>,
+{
+    let opt = Opt::from_iter(args);
+    for result in input.lines() {
         let from = PathBuf::from(result?);
         let to = slugger::convert_path(&from)?;
         if opt.rename {
@@ -62,7 +63,7 @@ fn slugger_main(override_args: Option<Vec<OsString>>) -> io::Result<()> {
     }
     Ok(())
 }
-/*
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -70,11 +71,7 @@ mod test {
     #[test]
     fn slugger_help() {
         use std::error::Error;
-        let mut fs = rsfs::mem::FS::new();
-        match slugger_main(&mut fs, &vec![]) {
-            Ok(()) => panic!("should return Err with zero args"),
-            Err(io_error) => assert!(io_error.description().starts_with("Usage")),
-        }
+        use std::io;
+        assert!(slugger_main(vec!["--help".into()], io::empty()).is_ok());
     }
 }
-*/
