@@ -17,13 +17,11 @@ use unidecode::unidecode;
 /// ```
 pub fn convert_str(input: &str) -> String {
     let separator = '-';
-    let input = input.trim();
     let input = input.to_lowercase();
-    let input = input.trim_matches(separator);
     let input = unidecode(&input);
     let mut slug = String::with_capacity(input.len());
     for symbol in input.chars() {
-        if symbol.is_whitespace() {
+        if symbol.is_whitespace() || symbol == '_' {
             slug.push(separator);
             continue;
         }
@@ -32,7 +30,8 @@ pub fn convert_str(input: &str) -> String {
             _ => (), // delete anything else
         }
     }
-    slug
+    // Trim leading/trailing dashes again
+    slug.trim_matches(separator).into()
 }
 
 pub fn convert_path(from: &Path) -> io::Result<PathBuf>
@@ -96,6 +95,7 @@ mod test {
         assert_eq!(convert_str(" a"), "a", "trim whitespace");
         assert_eq!(convert_str("a "), "a", "trim whitespace");
         assert_eq!(convert_str("\ta\t"), "a", "trim whitespace");
+        assert_eq!(convert_str("  \ta\t  "), "a", "trim whitespace");
         assert_eq!(convert_str("Á"), "a", "transliterate");
         assert_eq!(convert_str("a-b"), "a-b", "preserve dashes");
         assert_eq!(convert_str("a-"), "a", "trim dashes");
@@ -103,6 +103,8 @@ mod test {
         assert_eq!(convert_str("-a-"), "a", "trim dashes");
         assert_eq!(convert_str("--a"), "a", "trim dashes");
         assert_eq!(convert_str("a--"), "a", "trim dashes");
+        assert_eq!(convert_str("a_b"), "a-b", "underscore to dash");
+        assert_eq!(convert_str("~`!@#$%^&*()?/+={}[];:'\"<>,_a"), "a", "delete punctuation");
         assert_eq!(convert_str("foo.txt"), "foo.txt", "preserve periods");
     }
 
