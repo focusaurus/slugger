@@ -1,7 +1,6 @@
 extern crate rsfs;
 extern crate slugger;
 extern crate structopt;
-use rsfs::{GenFS, Metadata, Permissions};
 use std::env;
 use std::io;
 use std::io::prelude::*;
