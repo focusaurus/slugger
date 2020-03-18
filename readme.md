@@ -10,8 +10,12 @@ A unix filesystem utility to rename files using a restricted url-safe character 
 * Allow easy tab completion
 
 ## Usage
+ 
+Slugger reads filesystem paths from standard input, one per line. In the default mode, it just prints out the slugged versions. If you pass the `--rename` command line argument, slugger will do the file renames.
+Typically the input comes from commands that output lists of files like `find`, `ls`, etc.
 
-`slugger "some path/with WEIRD/ÑÄmes.pdf" "another weird/path.txt"`
+- Preview slugged names without doing anything: `find . -type f | slugger`
+- Do the actual renaming: `find . -type f | slugger --rename`
 
 ## How files are renamed
 
