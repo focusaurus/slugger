@@ -90,8 +90,6 @@ docker_run() {
   exec docker run --rm --interactive --tty \
     --attach stdin --attach stdout --attach stderr \
     --volume "${PWD}:/host" \
-    --volume $SSH_AUTH_SOCK:/ssh-agent \
-    --env SSH_AUTH_SOCK=/ssh-agent \
     --user "$(id -u)" \
     --publish 9999:9999 \
     "$1" "${2-bash}"
