@@ -38,7 +38,9 @@ fn slugger_main<
 */
 
 fn main() {
-    if let Err(message) = slugger_main(env::args(), io::stdin().lock()) {
+    let stdin = io::stdin();
+    let lock = stdin.lock();
+    if let Err(message) = slugger_main(env::args(), lock) {
         eprintln!("{}", message);
         std::process::exit(10);
     }
